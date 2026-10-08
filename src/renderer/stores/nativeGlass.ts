@@ -5,6 +5,7 @@ const APPEARANCE_AUTOMATIC = 0
 const STYLE_CLEAR = 1
 const VARIANT_SYSTEM_DEFAULT = -1
 const ADAPTIVE_OFF = 1
+const SUBTLE_DIM: GlassRegion['tint'] = [0, 0, 0, 0.05]
 
 function roundHalf(value: number): number {
   return Math.round(value * 2) / 2
@@ -42,7 +43,7 @@ function collectRegions(): GlassRegion[] {
       appearance: APPEARANCE_AUTOMATIC,
       variant: VARIANT_SYSTEM_DEFAULT,
       adaptive: ADAPTIVE_OFF,
-      tint: null,
+      tint: SUBTLE_DIM,
     })
   })
   return regions
