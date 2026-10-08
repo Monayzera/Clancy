@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+build/
+release/
+*.tsbuildinfo
+
+# Vendor (only launcher, package.json and license are tracked)
+vendor/openclaude/dist/
+vendor/openclaude/README.md
+vendor/openclaude/bin/*.test.mjs
+
+# Dev-only scripts
+scripts/soak-permission-server.ts
+
+# Unreferenced assets
+CLUI.png
+CLUI_mono.png
+
+# AI assistant / agent local files
+.claude/
+.codex/
+.codex_conversations
+CLAUDE.md
+MEMORY.md
+memory.md
+
+# Editors
+.vscode/
+.idea/
+.cursor/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment and secrets
+.env
+.env.*
+tokens/
+*.token
+*.tokens
+
+# Logs and runtime
+*.log
+.clui.pid
+
+# Temporary
+*.tmp
+*.bak
+src 2/
