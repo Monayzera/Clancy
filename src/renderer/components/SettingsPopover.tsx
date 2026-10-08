@@ -311,7 +311,7 @@ export function SettingsPopover() {
             backdropFilter: popoverGlass.filter ?? 'blur(20px)',
             WebkitBackdropFilter: popoverGlass.filter ?? 'blur(20px)',
             boxShadow: colors.popoverShadow,
-            border: `1px solid ${colors.popoverBorder}`,
+            border: `1px solid ${colors.popoverOutline}`,
             display: 'flex',
             flexDirection: 'column' as const,
           }}

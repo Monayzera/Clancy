@@ -156,7 +156,7 @@ export function HistoryPicker() {
             backdropFilter: popoverGlass.filter ?? 'blur(20px)',
             WebkitBackdropFilter: popoverGlass.filter ?? 'blur(20px)',
             boxShadow: colors.popoverShadow,
-            border: `1px solid ${colors.popoverBorder}`,
+            border: `1px solid ${colors.popoverOutline}`,
             ...(pos.maxHeight != null ? { maxHeight: pos.maxHeight } : {}),
             overflow: 'hidden',
             display: 'flex',

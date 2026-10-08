@@ -12,6 +12,7 @@ const darkColors = {
   containerBg: '#242422',
   containerBgCollapsed: '#21211e',
   containerBorder: '#3b3b36',
+  surfaceOutline: '#3b3b36',
   containerShadow: '0 8px 28px rgba(0, 0, 0, 0.35), 0 1px 6px rgba(0, 0, 0, 0.25)',
   cardShadow: '0 2px 8px rgba(0,0,0,0.35)',
   cardShadowCollapsed: '0 2px 6px rgba(0,0,0,0.4)',
@@ -89,6 +90,7 @@ const darkColors = {
   // Popover
   popoverBg: '#292927',
   popoverBorder: '#3b3b36',
+  popoverOutline: '#3b3b36',
   popoverShadow: '0 4px 20px rgba(0,0,0,0.3), 0 1px 4px rgba(0,0,0,0.2)',
 
   // Code block
@@ -142,6 +144,7 @@ const lightColors = {
   containerBg: '#f9f8f5',
   containerBgCollapsed: '#f4f2ed',
   containerBorder: '#dddad2',
+  surfaceOutline: '#dddad2',
   containerShadow: '0 8px 28px rgba(0, 0, 0, 0.08), 0 1px 6px rgba(0, 0, 0, 0.04)',
   cardShadow: '0 2px 8px rgba(0,0,0,0.06)',
   cardShadowCollapsed: '0 2px 6px rgba(0,0,0,0.08)',
@@ -219,6 +222,7 @@ const lightColors = {
   // Popover
   popoverBg: '#f9f8f5',
   popoverBorder: '#dddad2',
+  popoverOutline: '#dddad2',
   popoverShadow: '0 4px 20px rgba(0,0,0,0.1), 0 1px 4px rgba(0,0,0,0.06)',
 
   // Code block
@@ -272,6 +276,7 @@ const codexDarkColors = {
   containerBg: '#1a1a1a',
   containerBgCollapsed: '#191919',
   containerBorder: '#404040',
+  surfaceOutline: '#404040',
   containerShadow: '0 8px 28px rgba(0, 0, 0, 0.45), 0 1px 6px rgba(0, 0, 0, 0.3)',
   cardShadow: '0 2px 8px rgba(0,0,0,0.45)',
   cardShadowCollapsed: '0 2px 6px rgba(0,0,0,0.5)',
@@ -310,6 +315,7 @@ const codexDarkColors = {
   sendDisabled: 'rgba(136, 136, 136, 0.3)',
   popoverBg: '#1e1e1e',
   popoverBorder: '#404040',
+  popoverOutline: '#404040',
   popoverShadow: '0 4px 20px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.25)',
   codeBg: '#151515',
   accentBorder: 'rgba(136, 136, 136, 0.19)',
@@ -341,6 +347,7 @@ const openclaudeDarkColors = {
   containerBg: '#000000',
   containerBgCollapsed: '#000000',
   containerBorder: '#1a1a1a',
+  surfaceOutline: '#1a1a1a',
   containerShadow: '0 8px 28px rgba(0, 0, 0, 0.6), 0 1px 6px rgba(0, 0, 0, 0.4)',
   cardShadow: '0 2px 8px rgba(0,0,0,0.5)',
   cardShadowCollapsed: '0 2px 6px rgba(0,0,0,0.6)',
@@ -392,6 +399,7 @@ const openclaudeDarkColors = {
   sendDisabled: 'rgba(52, 211, 153, 0.25)',
   popoverBg: '#050505',
   popoverBorder: '#1a1a1a',
+  popoverOutline: '#1a1a1a',
   popoverShadow: '0 4px 20px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3)',
   codeBg: '#080808',
   micBg: '#0d0d0d',
@@ -427,9 +435,7 @@ const glassLightInkColors: ColorPalette = {
   containerBg: 'transparent',
   containerBgCollapsed: 'transparent',
   containerBorder: 'rgba(255, 255, 255, 0.1)',
-  containerShadow: '0 18px 50px rgba(0, 0, 0, 0.28), 0 2px 10px rgba(0, 0, 0, 0.18)',
-  cardShadow: '0 18px 50px rgba(0, 0, 0, 0.28), 0 2px 10px rgba(0, 0, 0, 0.16)',
-  cardShadowCollapsed: '0 12px 34px rgba(0, 0, 0, 0.26), 0 2px 8px rgba(0, 0, 0, 0.16)',
+  surfaceOutline: 'rgba(255, 255, 255, 0.1)',
   surfacePrimary: 'rgba(255, 255, 255, 0.12)',
   surfaceSecondary: 'rgba(255, 255, 255, 0.18)',
   surfaceHover: 'rgba(255, 255, 255, 0.08)',
@@ -476,7 +482,7 @@ const glassLightInkColors: ColorPalette = {
   sendDisabled: 'rgba(255, 255, 255, 0.25)',
   popoverBg: 'rgba(24, 24, 27, 0.3)',
   popoverBorder: 'rgba(255, 255, 255, 0.14)',
-  popoverShadow: '0 18px 48px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.18)',
+  popoverOutline: 'rgba(255, 255, 255, 0.14)',
   codeBg: 'rgba(0, 0, 0, 0.28)',
   micBg: 'rgba(255, 255, 255, 0.14)',
   micColor: 'rgba(255, 255, 255, 0.9)',
@@ -495,9 +501,7 @@ const glassDarkInkColors: ColorPalette = {
   containerBg: 'transparent',
   containerBgCollapsed: 'transparent',
   containerBorder: 'rgba(0, 0, 0, 0.08)',
-  containerShadow: '0 18px 50px rgba(0, 0, 0, 0.16), 0 2px 10px rgba(0, 0, 0, 0.08)',
-  cardShadow: '0 18px 50px rgba(0, 0, 0, 0.16), 0 2px 10px rgba(0, 0, 0, 0.08)',
-  cardShadowCollapsed: '0 12px 34px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08)',
+  surfaceOutline: 'rgba(0, 0, 0, 0.08)',
   surfacePrimary: 'rgba(255, 255, 255, 0.45)',
   surfaceSecondary: 'rgba(255, 255, 255, 0.6)',
   surfaceHover: 'rgba(0, 0, 0, 0.05)',
@@ -544,7 +548,7 @@ const glassDarkInkColors: ColorPalette = {
   sendDisabled: 'rgba(0, 0, 0, 0.18)',
   popoverBg: 'rgba(255, 255, 255, 0.3)',
   popoverBorder: 'rgba(0, 0, 0, 0.08)',
-  popoverShadow: '0 18px 48px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08)',
+  popoverOutline: 'rgba(0, 0, 0, 0.08)',
   codeBg: 'rgba(255, 255, 255, 0.5)',
   micBg: 'rgba(0, 0, 0, 0.07)',
   micColor: 'rgba(0, 0, 0, 0.75)',
@@ -558,8 +562,18 @@ const glassDarkInkColors: ColorPalette = {
   accentBorderMedium: 'rgba(0, 0, 0, 0.18)',
 }
 
-const nativeGlassLightInkColors: ColorPalette = { ...glassLightInkColors, popoverBg: 'transparent' }
-const nativeGlassDarkInkColors: ColorPalette = { ...glassDarkInkColors, popoverBg: 'transparent' }
+const nativeGlassOverrides = {
+  popoverBg: 'transparent',
+  surfaceOutline: 'transparent',
+  popoverOutline: 'transparent',
+  containerShadow: 'none',
+  cardShadow: 'none',
+  cardShadowCollapsed: 'none',
+  popoverShadow: 'none',
+}
+
+const nativeGlassLightInkColors: ColorPalette = { ...glassLightInkColors, ...nativeGlassOverrides }
+const nativeGlassDarkInkColors: ColorPalette = { ...glassDarkInkColors, ...nativeGlassOverrides }
 
 function claudeColors(isDark: boolean, glass: ColorPalette | null): ColorPalette {
   return glass ?? (isDark ? darkColors : lightColors)

@@ -114,7 +114,7 @@ export function SlashCommandMenu({ filter, selectedIndex, onSelect, anchorRect, 
           maxHeight: 220,
           background: colors.popoverBg,
           backdropFilter: listGlass.filter ?? 'blur(20px)',
-          border: `1px solid ${colors.popoverBorder}`,
+          border: `1px solid ${colors.popoverOutline}`,
           boxShadow: colors.popoverShadow,
         }}
       >

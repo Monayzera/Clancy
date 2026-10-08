@@ -185,7 +185,7 @@ function ModelPicker() {
             backdropFilter: popoverGlass.filter ?? 'blur(20px)',
             WebkitBackdropFilter: popoverGlass.filter ?? 'blur(20px)',
             boxShadow: colors.popoverShadow,
-            border: `1px solid ${colors.popoverBorder}`,
+            border: `1px solid ${colors.popoverOutline}`,
           }}
         >
           <div className="py-1" style={{ maxHeight: 240, overflowY: 'auto' }}>
@@ -300,7 +300,7 @@ function PermissionModePicker() {
             backdropFilter: popoverGlass.filter ?? 'blur(20px)',
             WebkitBackdropFilter: popoverGlass.filter ?? 'blur(20px)',
             boxShadow: colors.popoverShadow,
-            border: `1px solid ${colors.popoverBorder}`,
+            border: `1px solid ${colors.popoverOutline}`,
           }}
         >
           <div className="py-1">
@@ -707,7 +707,7 @@ export function StatusBar() {
               backdropFilter: dirPopGlass.filter ?? 'blur(20px)',
               WebkitBackdropFilter: dirPopGlass.filter ?? 'blur(20px)',
               boxShadow: colors.popoverShadow,
-              border: `1px solid ${colors.popoverBorder}`,
+              border: `1px solid ${colors.popoverOutline}`,
             }}
           >
             <div className="py-1.5 px-1">

@@ -389,7 +389,7 @@ export default function App() {
               marginLeft: isExpanded ? 0 : cardCollapsedMargin,
               marginRight: isExpanded ? 0 : cardCollapsedMargin,
               background: isExpanded ? colors.containerBg : colors.containerBgCollapsed,
-              borderColor: colors.containerBorder,
+              borderColor: colors.surfaceOutline,
               boxShadow: isExpanded ? colors.cardShadow : colors.cardShadowCollapsed,
             }}
             transition={SPRING}
