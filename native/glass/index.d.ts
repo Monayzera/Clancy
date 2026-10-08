@@ -11,6 +11,7 @@ export interface NativeGlassRegion {
   variant: number
   adaptive: number
   tint: [number, number, number, number] | null
+  paths?: number[][]
 }
 
 export function isSupported(): boolean

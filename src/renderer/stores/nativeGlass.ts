@@ -1,11 +1,12 @@
 import { useThemeStore, isGlassActive } from '../theme'
 import type { GlassRegion } from '../../shared/types'
+import { measureBlob } from '../glassBlob'
 
 const APPEARANCE_AUTOMATIC = 0
 const STYLE_CLEAR = 1
 const VARIANT_SYSTEM_DEFAULT = -1
 const ADAPTIVE_OFF = 1
-const SUBTLE_DIM: GlassRegion['tint'] = [0, 0, 0, 0.08]
+const SUBTLE_DIM: GlassRegion['tint'] = [0, 0, 0, 0.07]
 
 function roundHalf(value: number): number {
   return Math.round(value * 2) / 2
@@ -28,6 +29,26 @@ function collectRegions(): GlassRegion[] {
     if (!id || layoutWidth === 0 || element.offsetHeight === 0) return
     const alpha = effectiveOpacity(element)
     if (alpha <= 0.001) return
+    if (element.dataset.glassBlob !== undefined) {
+      const blob = measureBlob(element)
+      if (!blob) return
+      regions.push({
+        id,
+        x: blob.x,
+        y: blob.y,
+        width: blob.width,
+        height: blob.height,
+        radius: 0,
+        alpha: Math.round(alpha * 100) / 100,
+        style: STYLE_CLEAR,
+        appearance: APPEARANCE_AUTOMATIC,
+        variant: VARIANT_SYSTEM_DEFAULT,
+        adaptive: ADAPTIVE_OFF,
+        tint: SUBTLE_DIM,
+        paths: blob.paths,
+      })
+      return
+    }
     const rect = element.getBoundingClientRect()
     const scale = rect.width / layoutWidth
     const radius = (Number(element.dataset.glassRadius) || 0) * scale

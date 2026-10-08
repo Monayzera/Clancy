@@ -11,6 +11,7 @@ import { useClaudeEvents } from './hooks/useClaudeEvents'
 import { useCodexQuota } from './hooks/useCodexQuota'
 import { useHealthReconciliation } from './hooks/useHealthReconciliation'
 import { LiquidGlassLayer } from './components/LiquidGlassLayer'
+import { GlassBlobLayer } from './components/GlassBlobLayer'
 import { initNativeGlass } from './stores/nativeGlass'
 import { useSessionStore, useActiveTab } from './stores/sessionStore'
 import { useColors, useThemeStore, useGlassActive, spacing } from './theme'
@@ -451,38 +452,37 @@ export default function App() {
               data-clui-ui
               className="circles-out"
             >
-              <div className="btn-stack">
+              <div
+                className={glassActive ? 'btn-stack btn-stack-blob' : 'btn-stack'}
+                data-glass={glassActive ? 'buttons' : undefined}
+                data-glass-blob={glassActive ? '' : undefined}
+              >
+                <GlassBlobLayer />
                 <button
-                  className={glassActive ? 'stack-btn stack-btn-1 glass-surface lg-surface' : 'stack-btn stack-btn-1 glass-surface'}
-                  data-glass={glassActive ? 'button-1' : undefined}
-                  data-glass-radius={glassActive ? 23 : undefined}
+                  className={glassActive ? 'stack-btn stack-btn-1' : 'stack-btn stack-btn-1 glass-surface'}
+                  data-glass-circle={glassActive ? '' : undefined}
                   title="Attach file"
                   onClick={handleAttachFile}
                   disabled={isRunning}
                 >
-                  <LiquidGlassLayer />
                   <Paperclip size={17} />
                 </button>
                 <button
-                  className={glassActive ? 'stack-btn stack-btn-2 glass-surface lg-surface' : 'stack-btn stack-btn-2 glass-surface'}
-                  data-glass={glassActive ? 'button-2' : undefined}
-                  data-glass-radius={glassActive ? 23 : undefined}
+                  className={glassActive ? 'stack-btn stack-btn-2' : 'stack-btn stack-btn-2 glass-surface'}
+                  data-glass-circle={glassActive ? '' : undefined}
                   title="Take screenshot"
                   onClick={handleScreenshot}
                   disabled={isRunning}
                 >
-                  <LiquidGlassLayer />
                   <Camera size={17} />
                 </button>
                 <button
-                  className={glassActive ? 'stack-btn stack-btn-3 glass-surface lg-surface' : 'stack-btn stack-btn-3 glass-surface'}
-                  data-glass={glassActive ? 'button-3' : undefined}
-                  data-glass-radius={glassActive ? 23 : undefined}
+                  className={glassActive ? 'stack-btn stack-btn-3' : 'stack-btn stack-btn-3 glass-surface'}
+                  data-glass-circle={glassActive ? '' : undefined}
                   title="Skills & Plugins"
                   onClick={() => useSessionStore.getState().toggleMarketplace()}
                   disabled={isRunning}
                 >
-                  <LiquidGlassLayer />
                   <HeadCircuit size={17} />
                 </button>
               </div>

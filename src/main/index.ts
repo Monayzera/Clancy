@@ -390,6 +390,8 @@ interface NativeGlassModule {
 }
 
 const MAX_GLASS_REGIONS = 32
+const MAX_GLASS_SUBPATHS = 8
+const MAX_GLASS_PATH_VALUES = 2048
 const GLASS_TONE_THRESHOLD = 0.22
 const GLASS_TONE_LIGHT_ABOVE = 0.26
 const GLASS_TONE_DARK_BELOW = 0.18
@@ -422,6 +424,21 @@ function readFinite(source: object, key: string): number | null {
   return isFiniteNumber(value) ? value : null
 }
 
+function readGlassPaths(source: object): number[][] | null {
+  const value: unknown = Reflect.get(source, 'paths')
+  if (!Array.isArray(value)) return null
+  const entries: unknown[] = value.slice(0, MAX_GLASS_SUBPATHS)
+  const paths: number[][] = []
+  for (const entry of entries) {
+    if (!Array.isArray(entry)) continue
+    const values: unknown[] = entry
+    if (values.length < 6 || values.length > MAX_GLASS_PATH_VALUES || values.length % 2 !== 0) continue
+    const points = values.filter(isFiniteNumber)
+    if (points.length === values.length) paths.push(points)
+  }
+  return paths.length > 0 ? paths : null
+}
+
 function parseGlassRegions(value: unknown): GlassRegion[] {
   if (!Array.isArray(value)) return []
   const items: unknown[] = value.slice(0, MAX_GLASS_REGIONS)
@@ -447,7 +464,10 @@ function parseGlassRegions(value: unknown): GlassRegion[] {
       const [r, g, b, a]: unknown[] = tintValue
       if (isFiniteNumber(r) && isFiniteNumber(g) && isFiniteNumber(b) && isFiniteNumber(a)) tint = [r, g, b, a]
     }
-    regions.push({ id, x, y, width, height, radius, alpha, style, appearance, variant, adaptive, tint })
+    const region: GlassRegion = { id, x, y, width, height, radius, alpha, style, appearance, variant, adaptive, tint }
+    const paths = readGlassPaths(item)
+    if (paths) region.paths = paths
+    regions.push(region)
   }
   return regions
 }

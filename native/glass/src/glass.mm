@@ -6,10 +6,13 @@
 #include <node_api.h>
 #include <cmath>
 #include <string>
+#include <vector>
 
 static char kGlassStateKey;
 static char kActiveAppearanceKey;
 static const uint32_t kMaxRegions = 32;
+static const uint32_t kMaxSubpaths = 8;
+static const uint32_t kMaxPathValues = 2048;
 
 @interface CluiGlassHostView : NSView
 @end
@@ -27,6 +30,7 @@ static const uint32_t kMaxRegions = 32;
 @property(strong) NSView *container;
 @property(strong) CluiGlassHostView *host;
 @property(strong) NSMutableDictionary<NSString *, NSView *> *views;
+@property(strong) NSMutableSet<NSString *> *pathed;
 @end
 
 @implementation CluiGlassState
@@ -46,6 +50,7 @@ struct GlassRegion {
   int32_t adaptive = -1;
   bool hasTint = false;
   double tint[4] = {0, 0, 0, 0};
+  std::vector<std::vector<double>> paths;
 };
 
 static bool GlassAvailable() {
@@ -117,7 +122,59 @@ static bool ReadRegion(napi_env env, napi_value object, GlassRegion *region) {
       }
     }
   }
+
+  napi_value pathsValue;
+  if (napi_get_named_property(env, object, "paths", &pathsValue) == napi_ok &&
+      napi_is_array(env, pathsValue, &isArray) == napi_ok && isArray) {
+    uint32_t pathCount = 0;
+    napi_get_array_length(env, pathsValue, &pathCount);
+    if (pathCount > kMaxSubpaths) pathCount = kMaxSubpaths;
+    for (uint32_t p = 0; p < pathCount; p++) {
+      napi_value pointsValue;
+      bool pointsIsArray = false;
+      if (napi_get_element(env, pathsValue, p, &pointsValue) != napi_ok ||
+          napi_is_array(env, pointsValue, &pointsIsArray) != napi_ok || !pointsIsArray) continue;
+      uint32_t valueCount = 0;
+      napi_get_array_length(env, pointsValue, &valueCount);
+      if (valueCount < 6 || valueCount > kMaxPathValues || valueCount % 2 != 0) continue;
+      std::vector<double> points;
+      points.reserve(valueCount);
+      for (uint32_t i = 0; i < valueCount; i++) {
+        napi_value component;
+        double number = 0;
+        if (napi_get_element(env, pointsValue, i, &component) != napi_ok ||
+            napi_get_value_double(env, component, &number) != napi_ok || !std::isfinite(number)) break;
+        points.push_back(number);
+      }
+      if (points.size() == valueCount) region->paths.push_back(std::move(points));
+    }
+  }
   return true;
+}
+
+static void ApplyPath(CluiGlassState *state, NSString *key, NSView *glass, const GlassRegion &region) {
+  SEL pathSelector = NSSelectorFromString(@"_setPath:");
+  if (![glass respondsToSelector:pathSelector]) return;
+  if (region.paths.empty()) {
+    if (![state.pathed containsObject:key]) return;
+    ((void (*)(id, SEL, CGPathRef))objc_msgSend)(glass, pathSelector, NULL);
+    [state.pathed removeObject:key];
+    return;
+  }
+  double height = fmax(0, region.height);
+  bool flipped = glass.isFlipped;
+  CGMutablePathRef path = CGPathCreateMutable();
+  if (!path) return;
+  for (const std::vector<double> &points : region.paths) {
+    CGPathMoveToPoint(path, NULL, points[0], flipped ? points[1] : height - points[1]);
+    for (size_t i = 2; i + 1 < points.size(); i += 2) {
+      CGPathAddLineToPoint(path, NULL, points[i], flipped ? points[i + 1] : height - points[i + 1]);
+    }
+    CGPathCloseSubpath(path);
+  }
+  ((void (*)(id, SEL, CGPathRef))objc_msgSend)(glass, pathSelector, path);
+  CGPathRelease(path);
+  [state.pathed addObject:key];
 }
 
 static NSView *ContentViewFromHandle(napi_env env, napi_value handle) {
@@ -174,6 +231,7 @@ static CluiGlassState *StateForView(NSView *content, bool create) {
     state.container = container;
     state.host = host;
     state.views = [NSMutableDictionary dictionary];
+    state.pathed = [NSMutableSet set];
     objc_setAssociatedObject(content, &kGlassStateKey, state, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     KeepActiveAppearance(content.window);
   }
@@ -230,6 +288,7 @@ static napi_value SetRegions(napi_env env, napi_callback_info info) {
       }
       glass.frame = NSMakeRect(region.x, region.y, fmax(0, region.width), fmax(0, region.height));
       glass.cornerRadius = fmax(0, region.radius);
+      ApplyPath(state, key, glass, region);
       glass.style = region.style == 1 ? NSGlassEffectViewStyleClear : NSGlassEffectViewStyleRegular;
       glass.appearance = region.appearance == 2 ? [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua]
           : region.appearance == 1 ? [NSAppearance appearanceNamed:NSAppearanceNameAqua]
@@ -253,6 +312,7 @@ static napi_value SetRegions(napi_env env, napi_callback_info info) {
       if ([seen containsObject:key]) continue;
       [state.views[key] removeFromSuperview];
       [state.views removeObjectForKey:key];
+      [state.pathed removeObject:key];
     }
     [CATransaction commit];
   }

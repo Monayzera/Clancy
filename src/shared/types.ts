@@ -474,6 +474,7 @@ export interface GlassRegion {
   variant: number
   adaptive: number
   tint: [number, number, number, number] | null
+  paths?: number[][]
 }
 
 export interface CodexQuota {
