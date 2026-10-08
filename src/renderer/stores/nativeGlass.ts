@@ -3,7 +3,8 @@ import type { GlassRegion } from '../../shared/types'
 
 const APPEARANCE_AUTOMATIC = 0
 const STYLE_CLEAR = 1
-const VARIANT_BLURRED_CLEAR = 3
+const VARIANT_SYSTEM_DEFAULT = -1
+const ADAPTIVE_OFF = 1
 
 function roundHalf(value: number): number {
   return Math.round(value * 2) / 2
@@ -39,7 +40,8 @@ function collectRegions(): GlassRegion[] {
       alpha: Math.round(alpha * 100) / 100,
       style: STYLE_CLEAR,
       appearance: APPEARANCE_AUTOMATIC,
-      variant: VARIANT_BLURRED_CLEAR,
+      variant: VARIANT_SYSTEM_DEFAULT,
+      adaptive: ADAPTIVE_OFF,
       tint: null,
     })
   })
