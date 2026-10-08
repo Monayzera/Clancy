@@ -431,6 +431,7 @@ export const IPC = {
   IS_VISIBLE: 'clui:is-visible',
   GLASS_NATIVE_SUPPORTED: 'clui:glass-native-supported',
   GLASS_SET_REGIONS: 'clui:glass-set-regions',
+  GLASS_TONE: 'clui:glass-tone',
 
   // Skill provisioning (main → renderer)
   SKILL_STATUS: 'clui:skill-status',
@@ -457,6 +458,8 @@ export const IPC = {
   RUN_COMPLETE: 'clui:run-complete',
   RUN_ERROR: 'clui:run-error',
 } as const
+
+export type GlassTone = 'light' | 'dark'
 
 export interface GlassRegion {
   id: string

@@ -10,7 +10,7 @@ export interface GlassOptions {
   brightness: number
 }
 
-export const GLASS_POPOVER: GlassOptions = { radius: 12, bezel: 18, thickness: 34, blur: 6, saturation: 1.7, brightness: 1.04 }
+export const GLASS_POPOVER: GlassOptions = { radius: 12, bezel: 18, thickness: 34, blur: 10, saturation: 1.7, brightness: 1.04 }
 
 interface DisplacementMap {
   url: string

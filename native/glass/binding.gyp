@@ -7,7 +7,7 @@
         "CLANG_ENABLE_OBJC_ARC": "YES",
         "CLANG_CXX_LANGUAGE_STANDARD": "c++17",
         "MACOSX_DEPLOYMENT_TARGET": "11.0",
-        "OTHER_LDFLAGS": ["-framework AppKit", "-framework QuartzCore"]
+        "OTHER_LDFLAGS": ["-framework AppKit", "-framework QuartzCore", "-framework ScreenCaptureKit", "-framework CoreGraphics"]
       }
     }
   ]

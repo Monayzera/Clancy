@@ -13,3 +13,4 @@ export interface NativeGlassRegion {
 
 export function isSupported(): boolean
 export function setRegions(windowHandle: Buffer, regions: NativeGlassRegion[]): void
+export function sampleBackdrop(windowHandle: Buffer, rect: { x: number; y: number; width: number; height: number }): Promise<number | null>

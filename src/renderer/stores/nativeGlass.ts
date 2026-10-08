@@ -1,10 +1,7 @@
 import { useThemeStore, isGlassActive } from '../theme'
 import type { GlassRegion } from '../../shared/types'
 
-const APPEARANCE_LIGHT = 1
-const APPEARANCE_DARK = 2
-const CLEAR_DIM_DARK: GlassRegion['tint'] = [0, 0, 0, 0.3]
-const CLEAR_DIM_LIGHT: GlassRegion['tint'] = [1, 1, 1, 0.35]
+const APPEARANCE_AUTOMATIC = 0
 
 function roundHalf(value: number): number {
   return Math.round(value * 2) / 2
@@ -19,7 +16,7 @@ function effectiveOpacity(element: Element): number {
   return alpha
 }
 
-function collectRegions(appearance: number): GlassRegion[] {
+function collectRegions(): GlassRegion[] {
   const regions: GlassRegion[] = []
   document.querySelectorAll<HTMLElement>('[data-glass]').forEach((element) => {
     const id = element.dataset.glass
@@ -30,7 +27,6 @@ function collectRegions(appearance: number): GlassRegion[] {
     const rect = element.getBoundingClientRect()
     const scale = rect.width / layoutWidth
     const radius = (Number(element.dataset.glassRadius) || 0) * scale
-    const clear = element.dataset.glassStyle === 'clear'
     regions.push({
       id,
       x: roundHalf(rect.left),
@@ -39,9 +35,9 @@ function collectRegions(appearance: number): GlassRegion[] {
       height: roundHalf(rect.height),
       radius: roundHalf(radius),
       alpha: Math.round(alpha * 100) / 100,
-      style: clear ? 1 : 0,
-      appearance,
-      tint: clear ? (appearance === APPEARANCE_DARK ? CLEAR_DIM_DARK : CLEAR_DIM_LIGHT) : null,
+      style: element.dataset.glassStyle === 'clear' ? 1 : 0,
+      appearance: APPEARANCE_AUTOMATIC,
+      tint: null,
     })
   })
   return regions
@@ -70,7 +66,7 @@ export function initNativeGlass(): () => void {
       send([])
       return
     }
-    send(collectRegions(state.isDark ? APPEARANCE_DARK : APPEARANCE_LIGHT))
+    send(collectRegions())
     frame = requestAnimationFrame(tick)
   }
 
@@ -79,6 +75,7 @@ export function initNativeGlass(): () => void {
   }
 
   const unsubscribe = useThemeStore.subscribe(start)
+  const unsubscribeTone = api.onGlassTone ? api.onGlassTone((tone) => useThemeStore.getState().setGlassTone(tone)) : () => {}
   api.isNativeGlassSupported()
     .then((supported) => {
       if (disposed) return
@@ -91,6 +88,7 @@ export function initNativeGlass(): () => void {
     disposed = true
     if (frame) cancelAnimationFrame(frame)
     unsubscribe()
+    unsubscribeTone()
     api.setGlassRegions([])
   }
 }

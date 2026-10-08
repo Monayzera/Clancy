@@ -1,5 +1,6 @@
 #import <AppKit/AppKit.h>
 #import <QuartzCore/QuartzCore.h>
+#import <ScreenCaptureKit/ScreenCaptureKit.h>
 #import <objc/message.h>
 #import <objc/runtime.h>
 #include <node_api.h>
@@ -244,10 +245,149 @@ static napi_value SetRegions(napi_env env, napi_callback_info info) {
   return Undefined(env);
 }
 
+struct SampleRequest {
+  napi_deferred deferred = nullptr;
+  napi_threadsafe_function callback = nullptr;
+};
+
+static const size_t kSampleSize = 24;
+
+static void ResolveSample(napi_env env, napi_value jsCallback, void *context, void *data) {
+  SampleRequest *request = static_cast<SampleRequest *>(context);
+  double *luminance = static_cast<double *>(data);
+  if (env && request) {
+    napi_value result;
+    if (luminance && std::isfinite(*luminance)) {
+      napi_create_double(env, *luminance, &result);
+    } else {
+      napi_get_null(env, &result);
+    }
+    napi_resolve_deferred(env, request->deferred, result);
+  }
+  delete luminance;
+  delete request;
+}
+
+static void FinishSample(SampleRequest *request, double luminance) {
+  double *payload = new double(luminance);
+  if (napi_call_threadsafe_function(request->callback, payload, napi_tsfn_nonblocking) != napi_ok) delete payload;
+  napi_release_threadsafe_function(request->callback, napi_tsfn_release);
+}
+
+static double LinearChannel(double value) {
+  return value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4);
+}
+
+static double AverageLuminance(CGImageRef image) {
+  if (!image) return NAN;
+  uint8_t pixels[kSampleSize * kSampleSize * 4] = {0};
+  CGColorSpaceRef space = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
+  CGContextRef context = CGBitmapContextCreate(pixels, kSampleSize, kSampleSize, 8, kSampleSize * 4, space,
+                                               kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+  CGColorSpaceRelease(space);
+  if (!context) return NAN;
+  CGContextDrawImage(context, CGRectMake(0, 0, kSampleSize, kSampleSize), image);
+  CGContextRelease(context);
+  double total = 0;
+  size_t count = 0;
+  for (size_t i = 0; i < kSampleSize * kSampleSize; i++) {
+    const uint8_t *p = pixels + i * 4;
+    if (p[3] == 0) continue;
+    double alpha = p[3] / 255.0;
+    total += 0.2126 * LinearChannel(p[0] / 255.0 / alpha) + 0.7152 * LinearChannel(p[1] / 255.0 / alpha) +
+             0.0722 * LinearChannel(p[2] / 255.0 / alpha);
+    count++;
+  }
+  return count > 0 ? total / count : NAN;
+}
+
+static napi_value SampleBackdrop(napi_env env, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value argv[2];
+  napi_value promise;
+  SampleRequest *request = new SampleRequest();
+  napi_create_promise(env, &request->deferred, &promise);
+
+  napi_value resourceName;
+  napi_create_string_utf8(env, "clui-glass-sample", NAPI_AUTO_LENGTH, &resourceName);
+  if (napi_create_threadsafe_function(env, nullptr, nullptr, resourceName, 0, 1, nullptr, nullptr, request, ResolveSample,
+                                      &request->callback) != napi_ok) {
+    napi_value nullValue;
+    napi_get_null(env, &nullValue);
+    napi_resolve_deferred(env, request->deferred, nullValue);
+    delete request;
+    return promise;
+  }
+
+  NSView *content = nil;
+  double rx = 0, ry = 0, rw = 0, rh = 0;
+  bool valid = napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr) == napi_ok && argc >= 2;
+  if (valid) content = ContentViewFromHandle(env, argv[0]);
+  if (valid) {
+    valid = ReadNumber(env, argv[1], "x", &rx) && ReadNumber(env, argv[1], "y", &ry) &&
+            ReadNumber(env, argv[1], "width", &rw) && ReadNumber(env, argv[1], "height", &rh) && rw >= 1 && rh >= 1;
+  }
+  NSWindow *window = content.window;
+  NSScreen *screen = window.screen;
+  if (!valid || !window || !screen) {
+    FinishSample(request, NAN);
+    return promise;
+  }
+
+  if (@available(macOS 14.0, *)) {
+    NSRect contentFrame = [window contentRectForFrameRect:window.frame];
+    NSRect screenFrame = screen.frame;
+    CGRect source = CGRectMake(contentFrame.origin.x + rx - screenFrame.origin.x,
+                               NSMaxY(screenFrame) - (NSMaxY(contentFrame) - ry), rw, rh);
+    source = CGRectIntersection(source, CGRectMake(0, 0, screenFrame.size.width, screenFrame.size.height));
+    CGWindowID windowId = (CGWindowID)window.windowNumber;
+    CGDirectDisplayID displayId = [screen.deviceDescription[@"NSScreenNumber"] unsignedIntValue];
+    if (CGRectIsEmpty(source)) {
+      FinishSample(request, NAN);
+      return promise;
+    }
+    [SCShareableContent getShareableContentExcludingDesktopWindows:NO
+                                               onScreenWindowsOnly:YES
+                                                 completionHandler:^(SCShareableContent *shareable, NSError *error) {
+      if (error || !shareable) {
+        FinishSample(request, NAN);
+        return;
+      }
+      SCDisplay *display = nil;
+      for (SCDisplay *candidate in shareable.displays) {
+        if (candidate.displayID == displayId) display = candidate;
+      }
+      NSMutableArray<SCWindow *> *excluded = [NSMutableArray array];
+      for (SCWindow *candidate in shareable.windows) {
+        if (candidate.windowID == windowId) [excluded addObject:candidate];
+      }
+      if (!display) {
+        FinishSample(request, NAN);
+        return;
+      }
+      SCContentFilter *filter = [[SCContentFilter alloc] initWithDisplay:display excludingWindows:excluded];
+      SCStreamConfiguration *configuration = [[SCStreamConfiguration alloc] init];
+      configuration.sourceRect = source;
+      configuration.width = kSampleSize;
+      configuration.height = kSampleSize;
+      configuration.showsCursor = NO;
+      [SCScreenshotManager captureImageWithFilter:filter
+                                    configuration:configuration
+                                completionHandler:^(CGImageRef image, NSError *captureError) {
+        FinishSample(request, captureError ? NAN : AverageLuminance(image));
+      }];
+    }];
+  } else {
+    FinishSample(request, NAN);
+  }
+  return promise;
+}
+
 static napi_value Init(napi_env env, napi_value exports) {
   napi_property_descriptor properties[] = {
       {"isSupported", nullptr, IsSupported, nullptr, nullptr, nullptr, napi_default, nullptr},
       {"setRegions", nullptr, SetRegions, nullptr, nullptr, nullptr, napi_default, nullptr},
+      {"sampleBackdrop", nullptr, SampleBackdrop, nullptr, nullptr, nullptr, napi_default, nullptr},
   };
   napi_define_properties(env, exports, sizeof(properties) / sizeof(properties[0]), properties);
   return exports;

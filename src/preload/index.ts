@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/types'
-import type { AskUserQuestionAnswer, RunOptions, NormalizedEvent, HealthReport, EnrichedError, Attachment, SessionMeta, CatalogPlugin, SessionLoadMessage, CodexQuota, GlassRegion } from '../shared/types'
+import type { AskUserQuestionAnswer, RunOptions, NormalizedEvent, HealthReport, EnrichedError, Attachment, SessionMeta, CatalogPlugin, SessionLoadMessage, CodexQuota, GlassRegion, GlassTone } from '../shared/types'
 
 export interface CluiAPI {
   // ─── Request-response (renderer → main) ───
@@ -61,6 +61,7 @@ export interface CluiAPI {
   onWindowWillHide(callback: () => void): () => void
   isNativeGlassSupported(): Promise<boolean>
   setGlassRegions(regions: GlassRegion[]): void
+  onGlassTone(callback: (tone: GlassTone | null) => void): () => void
   notifyNative(payload: { title: string; body: string }): void
 }
 
@@ -183,6 +184,12 @@ const api: CluiAPI = {
   isNativeGlassSupported: () => ipcRenderer.invoke(IPC.GLASS_NATIVE_SUPPORTED),
 
   setGlassRegions: (regions) => ipcRenderer.send(IPC.GLASS_SET_REGIONS, regions),
+
+  onGlassTone: (callback) => {
+    const handler = (_e: Electron.IpcRendererEvent, tone: GlassTone | null) => callback(tone)
+    ipcRenderer.on(IPC.GLASS_TONE, handler)
+    return () => ipcRenderer.removeListener(IPC.GLASS_TONE, handler)
+  },
 }
 
 contextBridge.exposeInMainWorld('clui', api)

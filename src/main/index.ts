@@ -12,7 +12,7 @@ import { fetchCatalog, listInstalled, installPlugin, uninstallPlugin } from './m
 import { log as _log, LOG_FILE, flushLogs } from './logger'
 import { getCliEnv } from './cli-env'
 import { IPC } from '../shared/types'
-import type { AskUserQuestionAnswer, RunOptions, NormalizedEvent, EnrichedError, CodexQuota, GlassRegion } from '../shared/types'
+import type { AskUserQuestionAnswer, RunOptions, NormalizedEvent, EnrichedError, CodexQuota, GlassRegion, GlassTone } from '../shared/types'
 
 const DEBUG_MODE = process.env.CLUI_DEBUG === '1'
 const SPACES_DEBUG = DEBUG_MODE || process.env.CLUI_SPACES_DEBUG === '1'
@@ -238,6 +238,9 @@ function createWindow(): void {
   mainWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   mainWindow.setAlwaysOnTop(true, 'screen-saver')
 
+  mainWindow.on('show', scheduleGlassToneSample)
+  mainWindow.on('moved', scheduleGlassToneSample)
+
   mainWindow.once('ready-to-show', () => {
     showWindow('ready-to-show')
     mainWindow?.setIgnoreMouseEvents(true, { forward: true })
@@ -374,9 +377,14 @@ ipcMain.on(IPC.NOTIFY_NATIVE, (_e, payload: { title: string; body: string }) => 
 interface NativeGlassModule {
   isSupported(): boolean
   setRegions(windowHandle: Buffer, regions: GlassRegion[]): void
+  sampleBackdrop(windowHandle: Buffer, rect: { x: number; y: number; width: number; height: number }): Promise<number | null>
 }
 
 const MAX_GLASS_REGIONS = 32
+const GLASS_TONE_THRESHOLD = 0.22
+const GLASS_SAMPLE_DELAY_MS = 160
+let glassRegions: GlassRegion[] = []
+let glassSampleTimer: ReturnType<typeof setTimeout> | null = null
 
 function loadNativeGlass(): NativeGlassModule | null {
   if (process.platform !== 'darwin') return null
@@ -428,14 +436,40 @@ function parseGlassRegions(value: unknown): GlassRegion[] {
   return regions
 }
 
+async function sampleGlassTone(): Promise<void> {
+  if (!nativeGlass || !mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible()) return
+  const target = glassRegions.find((region) => region.id === 'card') ?? glassRegions[0]
+  if (!target || target.width < 1 || target.height < 1) return
+  try {
+    const luminance = await nativeGlass.sampleBackdrop(mainWindow.getNativeWindowHandle(), target)
+    const tone: GlassTone | null = luminance === null ? null : luminance > GLASS_TONE_THRESHOLD ? 'light' : 'dark'
+    broadcast(IPC.GLASS_TONE, tone)
+  } catch (err) {
+    log(`[glass] sampleBackdrop failed: ${err instanceof Error ? err.message : String(err)}`)
+  }
+}
+
+function scheduleGlassToneSample(): void {
+  if (!nativeGlass) return
+  if (glassSampleTimer) clearTimeout(glassSampleTimer)
+  glassSampleTimer = setTimeout(() => {
+    glassSampleTimer = null
+    void sampleGlassTone()
+  }, GLASS_SAMPLE_DELAY_MS)
+}
+
 ipcMain.handle(IPC.GLASS_NATIVE_SUPPORTED, () => nativeGlass !== null)
 
 ipcMain.on(IPC.GLASS_SET_REGIONS, (event, regions: unknown) => {
   if (!nativeGlass) return
   const win = BrowserWindow.fromWebContents(event.sender)
   if (!win || win.isDestroyed()) return
+  const parsed = parseGlassRegions(regions)
+  const hadRegions = glassRegions.length > 0
+  glassRegions = parsed
+  if (!hadRegions && parsed.length > 0) scheduleGlassToneSample()
   try {
-    nativeGlass.setRegions(win.getNativeWindowHandle(), parseGlassRegions(regions))
+    nativeGlass.setRegions(win.getNativeWindowHandle(), parsed)
   } catch (err) {
     log(`[glass] setRegions failed: ${err instanceof Error ? err.message : String(err)}`)
   }
