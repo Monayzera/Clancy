@@ -42,6 +42,7 @@ struct GlassRegion {
   double alpha = 1;
   int32_t style = 0;
   int32_t appearance = 0;
+  int32_t variant = -1;
   bool hasTint = false;
   double tint[4] = {0, 0, 0, 0};
 };
@@ -90,6 +91,8 @@ static bool ReadRegion(napi_env env, napi_value object, GlassRegion *region) {
   if (ReadNumber(env, object, "style", &style)) region->style = style >= 1 ? 1 : 0;
   double appearance = 0;
   if (ReadNumber(env, object, "appearance", &appearance)) region->appearance = appearance >= 2 ? 2 : (appearance >= 1 ? 1 : 0);
+  double variant = -1;
+  if (ReadNumber(env, object, "variant", &variant)) region->variant = variant >= 0 && variant <= 32 ? static_cast<int32_t>(variant) : -1;
 
   napi_value tintValue;
   bool isArray = false;
@@ -231,6 +234,10 @@ static napi_value SetRegions(napi_env env, napi_callback_info info) {
       glass.tintColor = region.hasTint
           ? [NSColor colorWithSRGBRed:region.tint[0] green:region.tint[1] blue:region.tint[2] alpha:region.tint[3]]
           : nil;
+      SEL variantSelector = NSSelectorFromString(@"set_variant:");
+      if (region.variant >= 0 && [glass respondsToSelector:variantSelector]) {
+        ((void (*)(id, SEL, NSInteger))objc_msgSend)(glass, variantSelector, region.variant);
+      }
       glass.alphaValue = fmin(1.0, fmax(0.0, region.alpha));
       glass.hidden = region.width < 1 || region.height < 1 || region.alpha <= 0.001;
     }

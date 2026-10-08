@@ -471,6 +471,7 @@ export interface GlassRegion {
   alpha: number
   style: number
   appearance: number
+  variant: number
   tint: [number, number, number, number] | null
 }
 

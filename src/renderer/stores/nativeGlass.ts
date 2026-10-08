@@ -2,6 +2,8 @@ import { useThemeStore, isGlassActive } from '../theme'
 import type { GlassRegion } from '../../shared/types'
 
 const APPEARANCE_AUTOMATIC = 0
+const STYLE_CLEAR = 1
+const VARIANT_BLURRED_CLEAR = 3
 
 function roundHalf(value: number): number {
   return Math.round(value * 2) / 2
@@ -35,8 +37,9 @@ function collectRegions(): GlassRegion[] {
       height: roundHalf(rect.height),
       radius: roundHalf(radius),
       alpha: Math.round(alpha * 100) / 100,
-      style: element.dataset.glassStyle === 'clear' ? 1 : 0,
+      style: STYLE_CLEAR,
       appearance: APPEARANCE_AUTOMATIC,
+      variant: VARIANT_BLURRED_CLEAR,
       tint: null,
     })
   })

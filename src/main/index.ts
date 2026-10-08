@@ -423,6 +423,7 @@ function parseGlassRegions(value: unknown): GlassRegion[] {
     const alpha = readFinite(item, 'alpha')
     const style = readFinite(item, 'style')
     const appearance = readFinite(item, 'appearance')
+    const variant = readFinite(item, 'variant') ?? -1
     if (typeof id !== 'string' || id.length === 0 || id.length > 48) continue
     if (x === null || y === null || width === null || height === null || radius === null || alpha === null || style === null || appearance === null) continue
     const tintValue: unknown = Reflect.get(item, 'tint')
@@ -431,7 +432,7 @@ function parseGlassRegions(value: unknown): GlassRegion[] {
       const [r, g, b, a]: unknown[] = tintValue
       if (isFiniteNumber(r) && isFiniteNumber(g) && isFiniteNumber(b) && isFiniteNumber(a)) tint = [r, g, b, a]
     }
-    regions.push({ id, x, y, width, height, radius, alpha, style, appearance, tint })
+    regions.push({ id, x, y, width, height, radius, alpha, style, appearance, variant, tint })
   }
   return regions
 }

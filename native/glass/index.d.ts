@@ -8,6 +8,7 @@ export interface NativeGlassRegion {
   alpha: number
   style: number
   appearance: number
+  variant: number
   tint: [number, number, number, number] | null
 }
 

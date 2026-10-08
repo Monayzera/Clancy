@@ -558,9 +558,11 @@ const glassDarkInkColors: ColorPalette = {
   accentBorderMedium: 'rgba(0, 0, 0, 0.18)',
 }
 
-function claudeColors(isDark: boolean, glassLightInk: boolean | null): ColorPalette {
-  if (glassLightInk !== null) return glassLightInk ? glassLightInkColors : glassDarkInkColors
-  return isDark ? darkColors : lightColors
+const nativeGlassLightInkColors: ColorPalette = { ...glassLightInkColors, popoverBg: 'transparent' }
+const nativeGlassDarkInkColors: ColorPalette = { ...glassDarkInkColors, popoverBg: 'transparent' }
+
+function claudeColors(isDark: boolean, glass: ColorPalette | null): ColorPalette {
+  return glass ?? (isDark ? darkColors : lightColors)
 }
 
 // ─── Theme store ───
@@ -627,7 +629,7 @@ function syncTokensToCss(tokens: ColorPalette): void {
   }
 }
 
-function applyTheme(isDark: boolean, provider?: 'claude' | 'openclaude' | 'codex', glassLightInk: boolean | null = null): void {
+function applyTheme(isDark: boolean, provider?: 'claude' | 'openclaude' | 'codex', glass: ColorPalette | null = null): void {
   document.documentElement.classList.toggle('dark', isDark)
   document.documentElement.classList.toggle('light', !isDark)
   if (provider === 'codex') {
@@ -635,7 +637,7 @@ function applyTheme(isDark: boolean, provider?: 'claude' | 'openclaude' | 'codex
   } else if (provider === 'openclaude') {
     syncTokensToCss(openclaudeDarkColors as unknown as ColorPalette)
   } else {
-    syncTokensToCss(claudeColors(isDark, glassLightInk))
+    syncTokensToCss(claudeColors(isDark, glass))
   }
 }
 
@@ -646,6 +648,13 @@ export function isGlassActive(s: Pick<ThemeState, 'liquidGlass' | 'reducedTransp
 function glassInk(s: Pick<ThemeState, 'liquidGlass' | 'reducedTransparency' | 'activeProvider' | 'glassTone' | '_systemIsDark'>): boolean | null {
   if (!isGlassActive(s)) return null
   return s.glassTone ? s.glassTone === 'dark' : s._systemIsDark
+}
+
+function glassPalette(s: Pick<ThemeState, 'liquidGlass' | 'reducedTransparency' | 'activeProvider' | 'glassTone' | '_systemIsDark' | 'nativeGlass'>): ColorPalette | null {
+  const ink = glassInk(s)
+  if (ink === null) return null
+  if (s.nativeGlass) return ink ? nativeGlassLightInkColors : nativeGlassDarkInkColors
+  return ink ? glassLightInkColors : glassDarkInkColors
 }
 
 const SETTINGS_KEY = 'clui-settings'
@@ -749,21 +758,21 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       ? (s.isDark ? codexDarkColors : codexLightColors)
       : provider === 'openclaude'
       ? openclaudeDarkColors
-      : claudeColors(s.isDark, glassInk({ ...s, activeProvider: provider }))
+      : claudeColors(s.isDark, glassPalette({ ...s, activeProvider: provider }))
     syncTokensToCss(palette as unknown as ColorPalette)
   },
   setIsDark: (isDark) => {
     set({ isDark })
     const active = get().activeProvider
     const provider = active === 'openclaude' ? undefined : active
-    applyTheme(isDark, provider, glassInk(get()))
+    applyTheme(isDark, provider, glassPalette(get()))
   },
   setThemeMode: (mode) => {
     const resolved = mode === 'system' ? get()._systemIsDark : mode === 'dark'
     set({ themeMode: mode, isDark: resolved })
     const active = get().activeProvider
     const provider = active === 'openclaude' ? undefined : active
-    applyTheme(resolved, provider, glassInk(get()))
+    applyTheme(resolved, provider, glassPalette(get()))
     const s = get()
     saveSettings({ themeMode: mode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
   },
@@ -790,24 +799,26 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   setLiquidGlass: (liquidGlass) => {
     set({ liquidGlass })
     const s = get()
-    if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', glassInk(s))
+    if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', glassPalette(s))
     saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass, defaultProvider: s.defaultProvider })
   },
   setReducedTransparency: (reducedTransparency) => {
     if (get().reducedTransparency === reducedTransparency) return
     set({ reducedTransparency })
     const s = get()
-    if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', glassInk(s))
+    if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', glassPalette(s))
   },
   setNativeGlass: (nativeGlass) => {
     if (get().nativeGlass === nativeGlass) return
     set({ nativeGlass })
+    const s = get()
+    if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', glassPalette(s))
   },
   setGlassTone: (glassTone) => {
     if (get().glassTone === glassTone) return
     set({ glassTone })
     const s = get()
-    if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', glassInk(s))
+    if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', glassPalette(s))
   },
   setGlobalRules: (rules) => {
     get().setRulesContent(rules)
@@ -881,18 +892,18 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     if (s.themeMode === 'system') {
       set({ _systemIsDark: isDark, isDark })
       const provider = s.activeProvider === 'openclaude' ? undefined : s.activeProvider
-      applyTheme(isDark, provider, glassInk(get()))
+      applyTheme(isDark, provider, glassPalette(get()))
     } else {
       set({ _systemIsDark: isDark })
       const next = get()
-      if (next.activeProvider === 'claude' && isGlassActive(next)) applyTheme(next.isDark, 'claude', glassInk(next))
+      if (next.activeProvider === 'claude' && isGlassActive(next)) applyTheme(next.isDark, 'claude', glassPalette(next))
     }
   },
 }))
 
 // Initialize CSS vars with saved theme
 const initialIsDark = saved.themeMode === 'dark' ? true : saved.themeMode === 'light' ? false : (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : true)
-syncTokensToCss(claudeColors(initialIsDark, glassInk(useThemeStore.getState())))
+syncTokensToCss(claudeColors(initialIsDark, glassPalette(useThemeStore.getState())))
 
 function syncGlassClass(s: ThemeState): void {
   if (typeof document === 'undefined') return
@@ -920,14 +931,14 @@ export function useGlassActive(): boolean {
 export function useColors(): ColorPalette {
   const isDark = useThemeStore((s) => s.isDark)
   const provider = useThemeStore((s) => s.activeProvider)
-  const ink = useThemeStore(glassInk)
+  const glass = useThemeStore(glassPalette)
   if (provider === 'codex') {
     return (isDark ? codexDarkColors : codexLightColors) as unknown as ColorPalette
   }
   if (provider === 'openclaude') {
     return openclaudeDarkColors as unknown as ColorPalette
   }
-  return claudeColors(isDark, ink)
+  return claudeColors(isDark, glass)
 }
 
 export function getColors(isDark: boolean, provider?: 'claude' | 'openclaude' | 'codex'): ColorPalette {
