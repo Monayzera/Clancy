@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
 import {
@@ -8,6 +8,7 @@ import {
 } from '@phosphor-icons/react'
 import { usePopoverLayer } from './PopoverLayer'
 import { useColors } from '../theme'
+import { useLiquidGlass, GLASS_POPOVER } from '../hooks/useLiquidGlass'
 
 export interface SlashCommand {
   command: string
@@ -71,6 +72,12 @@ export function getFilteredCommandsWithExtras(filter: string, extraCommands: Sla
 
 export function SlashCommandMenu({ filter, selectedIndex, onSelect, anchorRect, extraCommands = [] }: Props) {
   const listRef = useRef<HTMLDivElement>(null)
+  const listGlass = useLiquidGlass(GLASS_POPOVER)
+  const listGlassRef = listGlass.ref
+  const setListNode = useCallback((node: HTMLDivElement | null) => {
+    listRef.current = node
+    listGlassRef(node)
+  }, [listGlassRef])
   const popoverLayer = usePopoverLayer()
   const filtered = getFilteredCommandsWithExtras(filter, extraCommands)
   const colors = useColors()
@@ -99,12 +106,14 @@ export function SlashCommandMenu({ filter, selectedIndex, onSelect, anchorRect, 
       }}
     >
       <div
-        ref={listRef}
-        className="overflow-y-auto rounded-xl py-1"
+        ref={setListNode}
+        data-glass={listGlass.filter ? 'popover-slash' : undefined}
+        data-glass-radius={listGlass.filter ? 12 : undefined}
+        className={listGlass.filter ? 'overflow-y-auto rounded-xl py-1 lg-surface' : 'overflow-y-auto rounded-xl py-1'}
         style={{
           maxHeight: 220,
           background: colors.popoverBg,
-          backdropFilter: 'blur(20px)',
+          backdropFilter: listGlass.filter ?? 'blur(20px)',
           border: `1px solid ${colors.popoverBorder}`,
           boxShadow: colors.popoverShadow,
         }}

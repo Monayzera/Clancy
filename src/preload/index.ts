@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/types'
-import type { AskUserQuestionAnswer, RunOptions, NormalizedEvent, HealthReport, EnrichedError, Attachment, SessionMeta, CatalogPlugin, SessionLoadMessage, CodexQuota } from '../shared/types'
+import type { AskUserQuestionAnswer, RunOptions, NormalizedEvent, HealthReport, EnrichedError, Attachment, SessionMeta, CatalogPlugin, SessionLoadMessage, CodexQuota, GlassRegion } from '../shared/types'
 
 export interface CluiAPI {
   // ─── Request-response (renderer → main) ───
@@ -59,6 +59,8 @@ export interface CluiAPI {
   onCodexQuotaUpdate(callback: (quota: CodexQuota) => void): () => void
   onWindowShown(callback: () => void): () => void
   onWindowWillHide(callback: () => void): () => void
+  isNativeGlassSupported(): Promise<boolean>
+  setGlassRegions(regions: GlassRegion[]): void
   notifyNative(payload: { title: string; body: string }): void
 }
 
@@ -177,6 +179,10 @@ const api: CluiAPI = {
   },
 
   notifyNative: (payload) => ipcRenderer.send(IPC.NOTIFY_NATIVE, payload),
+
+  isNativeGlassSupported: () => ipcRenderer.invoke(IPC.GLASS_NATIVE_SUPPORTED),
+
+  setGlassRegions: (regions) => ipcRenderer.send(IPC.GLASS_SET_REGIONS, regions),
 }
 
 contextBridge.exposeInMainWorld('clui', api)

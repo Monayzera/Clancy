@@ -29,6 +29,9 @@
     "remark-gfm": "^4.0.0",
     "zustand": "^5.0.0"
   },
+  "optionalDependencies": {
+    "clui-native-glass": "file:native/glass"
+  },
   "build": {
     "appId": "com.clui.app",
     "productName": "Clui CC",

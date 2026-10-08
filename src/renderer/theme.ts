@@ -421,6 +421,147 @@ const openclaudeLightColors = openclaudeDarkColors
 
 export type ColorPalette = { [K in keyof typeof darkColors]: string }
 
+const glassLightInkColors: ColorPalette = {
+  ...darkColors,
+  containerBg: 'transparent',
+  containerBgCollapsed: 'transparent',
+  containerBorder: 'rgba(255, 255, 255, 0.1)',
+  containerShadow: '0 18px 50px rgba(0, 0, 0, 0.28), 0 2px 10px rgba(0, 0, 0, 0.18)',
+  cardShadow: '0 18px 50px rgba(0, 0, 0, 0.28), 0 2px 10px rgba(0, 0, 0, 0.16)',
+  cardShadowCollapsed: '0 12px 34px rgba(0, 0, 0, 0.26), 0 2px 8px rgba(0, 0, 0, 0.16)',
+  surfacePrimary: 'rgba(255, 255, 255, 0.12)',
+  surfaceSecondary: 'rgba(255, 255, 255, 0.18)',
+  surfaceHover: 'rgba(255, 255, 255, 0.08)',
+  surfaceActive: 'rgba(255, 255, 255, 0.14)',
+  inputBorder: 'rgba(255, 255, 255, 0.16)',
+  inputFocusBorder: 'rgba(255, 255, 255, 0.45)',
+  inputPillBg: 'transparent',
+  textPrimary: 'rgba(255, 255, 255, 0.96)',
+  textSecondary: 'rgba(255, 255, 255, 0.84)',
+  textTertiary: 'rgba(255, 255, 255, 0.6)',
+  textMuted: 'rgba(255, 255, 255, 0.32)',
+  accent: '#ffffff',
+  accentLight: 'rgba(255, 255, 255, 0.12)',
+  accentSoft: 'rgba(255, 255, 255, 0.18)',
+  statusIdle: 'rgba(255, 255, 255, 0.5)',
+  statusRunning: '#ffffff',
+  statusRunningBg: 'rgba(255, 255, 255, 0.12)',
+  statusComplete: '#8fe3a8',
+  statusCompleteBg: 'rgba(143, 227, 168, 0.14)',
+  statusError: '#ff8a7a',
+  statusErrorBg: 'rgba(255, 138, 122, 0.12)',
+  statusDead: '#ff8a7a',
+  statusPermission: '#ffd66b',
+  statusPermissionGlow: 'rgba(255, 214, 107, 0.45)',
+  tabActive: 'rgba(255, 255, 255, 0.16)',
+  tabActiveBorder: 'rgba(255, 255, 255, 0.22)',
+  tabHover: 'rgba(255, 255, 255, 0.08)',
+  userBubble: 'rgba(255, 255, 255, 0.13)',
+  userBubbleBorder: 'rgba(255, 255, 255, 0.18)',
+  userBubbleText: 'rgba(255, 255, 255, 0.96)',
+  toolBg: 'rgba(255, 255, 255, 0.07)',
+  toolBorder: 'rgba(255, 255, 255, 0.14)',
+  toolRunningBorder: 'rgba(255, 255, 255, 0.35)',
+  toolRunningBg: 'rgba(255, 255, 255, 0.08)',
+  timelineLine: 'rgba(255, 255, 255, 0.14)',
+  timelineNode: 'rgba(255, 255, 255, 0.3)',
+  timelineNodeActive: '#ffffff',
+  scrollThumb: 'rgba(255, 255, 255, 0.22)',
+  scrollThumbHover: 'rgba(255, 255, 255, 0.36)',
+  stopBg: '#ff5f57',
+  stopHover: '#e5483f',
+  sendBg: '#ffffff',
+  sendHover: 'rgba(255, 255, 255, 0.86)',
+  sendDisabled: 'rgba(255, 255, 255, 0.25)',
+  popoverBg: 'rgba(24, 24, 27, 0.42)',
+  popoverBorder: 'rgba(255, 255, 255, 0.14)',
+  popoverShadow: '0 18px 48px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.18)',
+  codeBg: 'rgba(0, 0, 0, 0.28)',
+  micBg: 'rgba(255, 255, 255, 0.14)',
+  micColor: 'rgba(255, 255, 255, 0.9)',
+  micDisabled: 'rgba(255, 255, 255, 0.1)',
+  placeholder: 'rgba(255, 255, 255, 0.5)',
+  btnDisabled: 'rgba(255, 255, 255, 0.25)',
+  textOnAccent: '#111113',
+  btnHoverColor: '#ffffff',
+  btnHoverBg: 'rgba(255, 255, 255, 0.16)',
+  accentBorder: 'rgba(255, 255, 255, 0.2)',
+  accentBorderMedium: 'rgba(255, 255, 255, 0.28)',
+}
+
+const glassDarkInkColors: ColorPalette = {
+  ...lightColors,
+  containerBg: 'transparent',
+  containerBgCollapsed: 'transparent',
+  containerBorder: 'rgba(0, 0, 0, 0.08)',
+  containerShadow: '0 18px 50px rgba(0, 0, 0, 0.16), 0 2px 10px rgba(0, 0, 0, 0.08)',
+  cardShadow: '0 18px 50px rgba(0, 0, 0, 0.16), 0 2px 10px rgba(0, 0, 0, 0.08)',
+  cardShadowCollapsed: '0 12px 34px rgba(0, 0, 0, 0.14), 0 2px 8px rgba(0, 0, 0, 0.08)',
+  surfacePrimary: 'rgba(255, 255, 255, 0.45)',
+  surfaceSecondary: 'rgba(255, 255, 255, 0.6)',
+  surfaceHover: 'rgba(0, 0, 0, 0.05)',
+  surfaceActive: 'rgba(0, 0, 0, 0.08)',
+  inputBorder: 'rgba(0, 0, 0, 0.1)',
+  inputFocusBorder: 'rgba(0, 0, 0, 0.3)',
+  inputPillBg: 'transparent',
+  textPrimary: 'rgba(0, 0, 0, 0.88)',
+  textSecondary: 'rgba(0, 0, 0, 0.72)',
+  textTertiary: 'rgba(0, 0, 0, 0.52)',
+  textMuted: 'rgba(0, 0, 0, 0.28)',
+  accent: '#1c1c1e',
+  accentLight: 'rgba(0, 0, 0, 0.07)',
+  accentSoft: 'rgba(0, 0, 0, 0.1)',
+  statusIdle: 'rgba(0, 0, 0, 0.4)',
+  statusRunning: '#1c1c1e',
+  statusRunningBg: 'rgba(0, 0, 0, 0.07)',
+  statusComplete: '#1f9d55',
+  statusCompleteBg: 'rgba(31, 157, 85, 0.12)',
+  statusError: '#d93a2b',
+  statusErrorBg: 'rgba(217, 58, 43, 0.1)',
+  statusDead: '#d93a2b',
+  statusPermission: '#b7791f',
+  statusPermissionGlow: 'rgba(183, 121, 31, 0.4)',
+  tabActive: 'rgba(255, 255, 255, 0.6)',
+  tabActiveBorder: 'rgba(0, 0, 0, 0.08)',
+  tabHover: 'rgba(0, 0, 0, 0.05)',
+  userBubble: 'rgba(255, 255, 255, 0.55)',
+  userBubbleBorder: 'rgba(0, 0, 0, 0.07)',
+  userBubbleText: 'rgba(0, 0, 0, 0.88)',
+  toolBg: 'rgba(255, 255, 255, 0.4)',
+  toolBorder: 'rgba(0, 0, 0, 0.08)',
+  toolRunningBorder: 'rgba(0, 0, 0, 0.25)',
+  toolRunningBg: 'rgba(0, 0, 0, 0.04)',
+  timelineLine: 'rgba(0, 0, 0, 0.12)',
+  timelineNode: 'rgba(0, 0, 0, 0.25)',
+  timelineNodeActive: '#1c1c1e',
+  scrollThumb: 'rgba(0, 0, 0, 0.2)',
+  scrollThumbHover: 'rgba(0, 0, 0, 0.32)',
+  stopBg: '#ff3b30',
+  stopHover: '#e0342a',
+  sendBg: '#1c1c1e',
+  sendHover: '#3a3a3c',
+  sendDisabled: 'rgba(0, 0, 0, 0.18)',
+  popoverBg: 'rgba(255, 255, 255, 0.5)',
+  popoverBorder: 'rgba(0, 0, 0, 0.08)',
+  popoverShadow: '0 18px 48px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08)',
+  codeBg: 'rgba(255, 255, 255, 0.5)',
+  micBg: 'rgba(0, 0, 0, 0.07)',
+  micColor: 'rgba(0, 0, 0, 0.75)',
+  micDisabled: 'rgba(0, 0, 0, 0.05)',
+  placeholder: 'rgba(0, 0, 0, 0.42)',
+  btnDisabled: 'rgba(0, 0, 0, 0.2)',
+  textOnAccent: '#ffffff',
+  btnHoverColor: 'rgba(0, 0, 0, 0.85)',
+  btnHoverBg: 'rgba(255, 255, 255, 0.55)',
+  accentBorder: 'rgba(0, 0, 0, 0.12)',
+  accentBorderMedium: 'rgba(0, 0, 0, 0.18)',
+}
+
+function claudeColors(isDark: boolean, glass: boolean): ColorPalette {
+  if (glass) return isDark ? glassLightInkColors : glassDarkInkColors
+  return isDark ? darkColors : lightColors
+}
+
 // ─── Theme store ───
 
 export type ThemeMode = 'system' | 'light' | 'dark'
@@ -440,6 +581,9 @@ interface ThemeState {
   expandedUI: boolean
   effort: EffortLevel
   thinkingEnabled: boolean
+  liquidGlass: boolean
+  reducedTransparency: boolean
+  nativeGlass: boolean
   defaultProvider: 'claude' | 'openclaude' | 'codex'
   activeProvider: 'claude' | 'openclaude' | 'codex'
   globalRules: string
@@ -455,6 +599,9 @@ interface ThemeState {
   setExpandedUI: (expanded: boolean) => void
   setEffort: (effort: EffortLevel) => void
   setThinkingEnabled: (enabled: boolean) => void
+  setLiquidGlass: (enabled: boolean) => void
+  setReducedTransparency: (reduced: boolean) => void
+  setNativeGlass: (supported: boolean) => void
   setGlobalRules: (rules: string) => void
   setActiveProfile: (id: string | null) => void
   createProfile: (name: string) => RulesProfile | null
@@ -477,7 +624,7 @@ function syncTokensToCss(tokens: ColorPalette): void {
   }
 }
 
-function applyTheme(isDark: boolean, provider?: 'claude' | 'openclaude' | 'codex'): void {
+function applyTheme(isDark: boolean, provider?: 'claude' | 'openclaude' | 'codex', glass = false): void {
   document.documentElement.classList.toggle('dark', isDark)
   document.documentElement.classList.toggle('light', !isDark)
   if (provider === 'codex') {
@@ -485,8 +632,12 @@ function applyTheme(isDark: boolean, provider?: 'claude' | 'openclaude' | 'codex
   } else if (provider === 'openclaude') {
     syncTokensToCss(openclaudeDarkColors as unknown as ColorPalette)
   } else {
-    syncTokensToCss(isDark ? darkColors : lightColors)
+    syncTokensToCss(claudeColors(isDark, glass))
   }
+}
+
+export function isGlassActive(s: Pick<ThemeState, 'liquidGlass' | 'reducedTransparency' | 'activeProvider'>): boolean {
+  return s.liquidGlass && !s.reducedTransparency && s.activeProvider === 'claude'
 }
 
 const SETTINGS_KEY = 'clui-settings'
@@ -528,7 +679,7 @@ function saveRulesV1(state: { profiles: RulesProfile[]; activeProfileId: string 
   try { localStorage.setItem(RULES_V1_KEY, JSON.stringify({ version: 1, ...state })) } catch {}
 }
 
-function loadSettings(): { themeMode: ThemeMode; soundEnabled: boolean; expandedUI: boolean; effort: EffortLevel; thinkingEnabled: boolean; defaultProvider: 'claude' | 'openclaude' | 'codex' } {
+function loadSettings(): { themeMode: ThemeMode; soundEnabled: boolean; expandedUI: boolean; effort: EffortLevel; thinkingEnabled: boolean; liquidGlass: boolean; defaultProvider: 'claude' | 'openclaude' | 'codex' } {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY)
     if (raw) {
@@ -539,6 +690,7 @@ function loadSettings(): { themeMode: ThemeMode; soundEnabled: boolean; expanded
         expandedUI: typeof parsed.expandedUI === 'boolean' ? parsed.expandedUI : false,
         effort: (['low', 'medium', 'high', 'max'] as EffortLevel[]).includes(parsed.effort) ? parsed.effort : 'medium',
         thinkingEnabled: typeof parsed.thinkingEnabled === 'boolean' ? parsed.thinkingEnabled : true,
+        liquidGlass: typeof parsed.liquidGlass === 'boolean' ? parsed.liquidGlass : true,
         defaultProvider: parsed.defaultProvider === 'codex'
           ? 'codex'
           : parsed.defaultProvider === 'openclaude'
@@ -547,10 +699,10 @@ function loadSettings(): { themeMode: ThemeMode; soundEnabled: boolean; expanded
       }
     }
   } catch {}
-  return { themeMode: 'dark', soundEnabled: true, expandedUI: false, effort: 'medium', thinkingEnabled: true, defaultProvider: 'claude' }
+  return { themeMode: 'dark', soundEnabled: true, expandedUI: false, effort: 'medium', thinkingEnabled: true, liquidGlass: true, defaultProvider: 'claude' }
 }
 
-function saveSettings(s: { themeMode: ThemeMode; soundEnabled: boolean; expandedUI: boolean; effort: EffortLevel; thinkingEnabled: boolean; defaultProvider: 'claude' | 'openclaude' | 'codex' }): void {
+function saveSettings(s: { themeMode: ThemeMode; soundEnabled: boolean; expandedUI: boolean; effort: EffortLevel; thinkingEnabled: boolean; liquidGlass: boolean; defaultProvider: 'claude' | 'openclaude' | 'codex' }): void {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)) } catch {}
 }
 
@@ -564,6 +716,9 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   expandedUI: saved.expandedUI,
   effort: saved.effort,
   thinkingEnabled: saved.thinkingEnabled,
+  liquidGlass: saved.liquidGlass,
+  reducedTransparency: typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-reduced-transparency: reduce)').matches : false,
+  nativeGlass: false,
   defaultProvider: saved.defaultProvider,
   activeProvider: saved.defaultProvider,
   globalRules: savedRules.activeProfileId !== null
@@ -576,7 +731,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   setDefaultProvider: (provider) => {
     set({ defaultProvider: provider })
     const s = get()
-    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, defaultProvider: provider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: provider })
   },
   setActiveProvider: (provider) => {
     const s = get()
@@ -585,43 +740,59 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
       ? (s.isDark ? codexDarkColors : codexLightColors)
       : provider === 'openclaude'
       ? openclaudeDarkColors
-      : (s.isDark ? darkColors : lightColors)
+      : claudeColors(s.isDark, isGlassActive({ ...s, activeProvider: provider }))
     syncTokensToCss(palette as unknown as ColorPalette)
   },
   setIsDark: (isDark) => {
     set({ isDark })
     const active = get().activeProvider
     const provider = active === 'openclaude' ? undefined : active
-    applyTheme(isDark, provider)
+    applyTheme(isDark, provider, isGlassActive(get()))
   },
   setThemeMode: (mode) => {
     const resolved = mode === 'system' ? get()._systemIsDark : mode === 'dark'
     set({ themeMode: mode, isDark: resolved })
     const active = get().activeProvider
     const provider = active === 'openclaude' ? undefined : active
-    applyTheme(resolved, provider)
+    applyTheme(resolved, provider, isGlassActive(get()))
     const s = get()
-    saveSettings({ themeMode: mode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: mode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
   },
   setSoundEnabled: (enabled) => {
     set({ soundEnabled: enabled })
     const s = get()
-    saveSettings({ themeMode: s.themeMode, soundEnabled: enabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: enabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
   },
   setExpandedUI: (expanded) => {
     set({ expandedUI: expanded })
     const s = get()
-    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: expanded, effort: s.effort, thinkingEnabled: s.thinkingEnabled, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: expanded, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
   },
   setEffort: (effort) => {
     set({ effort })
     const s = get()
-    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort, thinkingEnabled: s.thinkingEnabled, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
   },
   setThinkingEnabled: (thinkingEnabled) => {
     set({ thinkingEnabled })
     const s = get()
-    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
+  },
+  setLiquidGlass: (liquidGlass) => {
+    set({ liquidGlass })
+    const s = get()
+    if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', isGlassActive(s))
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass, defaultProvider: s.defaultProvider })
+  },
+  setReducedTransparency: (reducedTransparency) => {
+    if (get().reducedTransparency === reducedTransparency) return
+    set({ reducedTransparency })
+    const s = get()
+    if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', isGlassActive(s))
+  },
+  setNativeGlass: (nativeGlass) => {
+    if (get().nativeGlass === nativeGlass) return
+    set({ nativeGlass })
   },
   setGlobalRules: (rules) => {
     get().setRulesContent(rules)
@@ -695,7 +866,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     if (s.themeMode === 'system') {
       set({ _systemIsDark: isDark, isDark })
       const provider = s.activeProvider === 'openclaude' ? undefined : s.activeProvider
-      applyTheme(isDark, provider)
+      applyTheme(isDark, provider, isGlassActive(get()))
     } else {
       set({ _systemIsDark: isDark })
     }
@@ -704,18 +875,42 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
 
 // Initialize CSS vars with saved theme
 const initialIsDark = saved.themeMode === 'dark' ? true : saved.themeMode === 'light' ? false : (typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)').matches : true)
-syncTokensToCss(initialIsDark ? darkColors : lightColors)
+syncTokensToCss(claudeColors(initialIsDark, isGlassActive(useThemeStore.getState())))
+
+function syncGlassClass(s: ThemeState): void {
+  if (typeof document === 'undefined') return
+  const active = isGlassActive(s)
+  document.documentElement.classList.toggle('clui-glass', active)
+  document.documentElement.classList.toggle('clui-glass-light-ink', active && s.isDark)
+  document.documentElement.classList.toggle('clui-glass-native', active && s.nativeGlass)
+}
+
+syncGlassClass(useThemeStore.getState())
+useThemeStore.subscribe(syncGlassClass)
+
+if (typeof window !== 'undefined' && window.matchMedia) {
+  try {
+    window.matchMedia('(prefers-reduced-transparency: reduce)').addEventListener('change', (e) => {
+      useThemeStore.getState().setReducedTransparency(e.matches)
+    })
+  } catch {}
+}
+
+export function useGlassActive(): boolean {
+  return useThemeStore(isGlassActive)
+}
 
 export function useColors(): ColorPalette {
   const isDark = useThemeStore((s) => s.isDark)
   const provider = useThemeStore((s) => s.activeProvider)
+  const glass = useThemeStore(isGlassActive)
   if (provider === 'codex') {
     return (isDark ? codexDarkColors : codexLightColors) as unknown as ColorPalette
   }
   if (provider === 'openclaude') {
     return openclaudeDarkColors as unknown as ColorPalette
   }
-  return isDark ? darkColors : lightColors
+  return claudeColors(isDark, glass)
 }
 
 export function getColors(isDark: boolean, provider?: 'claude' | 'openclaude' | 'codex'): ColorPalette {

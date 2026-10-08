@@ -6,6 +6,7 @@ import { useSessionStore, useActiveTab, AVAILABLE_MODELS, CODEX_MODELS, DEFAULT_
 import { useCodexQuota } from '../hooks/useCodexQuota'
 import { usePopoverLayer } from './PopoverLayer'
 import { useColors, useThemeStore, type EffortLevel } from '../theme'
+import { useLiquidGlass, GLASS_POPOVER } from '../hooks/useLiquidGlass'
 
 
 function ProviderToggle() {
@@ -79,6 +80,12 @@ function ModelPicker() {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const popoverGlass = useLiquidGlass(GLASS_POPOVER)
+  const popoverGlassRef = popoverGlass.ref
+  const setPopoverNode = useCallback((node: HTMLDivElement | null) => {
+    popoverRef.current = node
+    popoverGlassRef(node)
+  }, [popoverGlassRef])
   const [pos, setPos] = useState({ bottom: 0, left: 0 })
 
   const isBusy = tab?.status === 'running' || tab?.status === 'connecting'
@@ -159,13 +166,15 @@ function ModelPicker() {
 
       {popoverLayer && open && !isOpenClaude && createPortal(
         <motion.div
-          ref={popoverRef}
+          ref={setPopoverNode}
+          data-glass={popoverGlass.filter ? 'popover-model' : undefined}
+          data-glass-radius={popoverGlass.filter ? 12 : undefined}
           data-clui-ui
           initial={{ opacity: 0, y: 6, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 4, scale: 0.97 }}
           transition={{ type: 'spring', stiffness: 400, damping: 28, mass: 0.6 }}
-          className="rounded-xl"
+          className={popoverGlass.filter ? 'rounded-xl lg-surface' : 'rounded-xl'}
           style={{
             position: 'fixed',
             bottom: pos.bottom,
@@ -173,8 +182,8 @@ function ModelPicker() {
             width: 192,
             pointerEvents: 'auto',
             background: colors.popoverBg,
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            backdropFilter: popoverGlass.filter ?? 'blur(20px)',
+            WebkitBackdropFilter: popoverGlass.filter ?? 'blur(20px)',
             boxShadow: colors.popoverShadow,
             border: `1px solid ${colors.popoverBorder}`,
           }}
@@ -217,6 +226,12 @@ function PermissionModePicker() {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const popoverGlass = useLiquidGlass(GLASS_POPOVER)
+  const popoverGlassRef = popoverGlass.ref
+  const setPopoverNode = useCallback((node: HTMLDivElement | null) => {
+    popoverRef.current = node
+    popoverGlassRef(node)
+  }, [popoverGlassRef])
   const [pos, setPos] = useState({ bottom: 0, left: 0 })
 
   const updatePos = useCallback(() => {
@@ -266,13 +281,15 @@ function PermissionModePicker() {
 
       {popoverLayer && open && createPortal(
         <motion.div
-          ref={popoverRef}
+          ref={setPopoverNode}
+          data-glass={popoverGlass.filter ? 'popover-permission' : undefined}
+          data-glass-radius={popoverGlass.filter ? 12 : undefined}
           data-clui-ui
           initial={{ opacity: 0, y: 6, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 4, scale: 0.97 }}
           transition={{ type: 'spring', stiffness: 400, damping: 28, mass: 0.6 }}
-          className="rounded-xl"
+          className={popoverGlass.filter ? 'rounded-xl lg-surface' : 'rounded-xl'}
           style={{
             position: 'fixed',
             bottom: pos.bottom,
@@ -280,8 +297,8 @@ function PermissionModePicker() {
             width: 180,
             pointerEvents: 'auto',
             background: colors.popoverBg,
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            backdropFilter: popoverGlass.filter ?? 'blur(20px)',
+            WebkitBackdropFilter: popoverGlass.filter ?? 'blur(20px)',
             boxShadow: colors.popoverShadow,
             border: `1px solid ${colors.popoverBorder}`,
           }}
@@ -585,6 +602,12 @@ export function StatusBar() {
   const [dirOpen, setDirOpen] = useState(false)
   const dirRef = useRef<HTMLButtonElement>(null)
   const dirPopRef = useRef<HTMLDivElement>(null)
+  const dirPopGlass = useLiquidGlass(GLASS_POPOVER)
+  const dirPopGlassRef = dirPopGlass.ref
+  const setDirPopNode = useCallback((node: HTMLDivElement | null) => {
+    dirPopRef.current = node
+    dirPopGlassRef(node)
+  }, [dirPopGlassRef])
   const [dirPos, setDirPos] = useState({ bottom: 0, left: 0 })
 
   // Close popover on outside click
@@ -666,12 +689,14 @@ export function StatusBar() {
         {/* Directory popover */}
         {popoverLayer && dirOpen && createPortal(
           <motion.div
-            ref={dirPopRef}
+            ref={setDirPopNode}
+            data-glass={dirPopGlass.filter ? 'popover-directory' : undefined}
+            data-glass-radius={dirPopGlass.filter ? 12 : undefined}
             data-clui-ui
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.12 }}
-            className="rounded-xl"
+            className={dirPopGlass.filter ? 'rounded-xl lg-surface' : 'rounded-xl'}
             style={{
               position: 'fixed',
               bottom: dirPos.bottom,
@@ -679,8 +704,8 @@ export function StatusBar() {
               width: 220,
               pointerEvents: 'auto',
               background: colors.popoverBg,
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
+              backdropFilter: dirPopGlass.filter ?? 'blur(20px)',
+              WebkitBackdropFilter: dirPopGlass.filter ?? 'blur(20px)',
               boxShadow: colors.popoverShadow,
               border: `1px solid ${colors.popoverBorder}`,
             }}

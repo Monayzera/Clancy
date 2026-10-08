@@ -10,8 +10,10 @@ import { PopoverLayerProvider } from './components/PopoverLayer'
 import { useClaudeEvents } from './hooks/useClaudeEvents'
 import { useCodexQuota } from './hooks/useCodexQuota'
 import { useHealthReconciliation } from './hooks/useHealthReconciliation'
+import { LiquidGlassLayer } from './components/LiquidGlassLayer'
+import { initNativeGlass } from './stores/nativeGlass'
 import { useSessionStore, useActiveTab } from './stores/sessionStore'
-import { useColors, useThemeStore, spacing } from './theme'
+import { useColors, useThemeStore, useGlassActive, spacing } from './theme'
 import { setWindowVisibility } from './stores/sessionStore'
 
 function formatResetTime(unixTs: number, nowMs: number): string {
@@ -152,6 +154,62 @@ export default function App() {
   const expandedUI = useThemeStore((s) => s.expandedUI)
   const [windowVisible, setWindowVisible] = useState(false)
   const bootstrappedRef = useRef(false)
+  const glassActive = useGlassActive()
+  const nativeGlass = useThemeStore((s) => s.nativeGlass)
+  const [topBarEl, setTopBarEl] = useState<HTMLDivElement | null>(null)
+  const [bottomBarEl, setBottomBarEl] = useState<HTMLDivElement | null>(null)
+  const [glassTop, setGlassTop] = useState(0)
+
+  useEffect(() => initNativeGlass(), [])
+
+  useEffect(() => {
+    if (!glassActive || nativeGlass || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const root = document.documentElement.style
+    let frame = 0
+    let pointerX = 0
+    let pointerY = 0
+    const apply = () => {
+      frame = 0
+      root.setProperty('--lg-light-x', `${pointerX}px`)
+      root.setProperty('--lg-light-y', `${pointerY}px`)
+    }
+    const onMove = (e: MouseEvent) => {
+      pointerX = e.clientX
+      pointerY = e.clientY
+      if (!frame) frame = requestAnimationFrame(apply)
+    }
+    document.addEventListener('mousemove', onMove, { passive: true })
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      if (frame) cancelAnimationFrame(frame)
+      root.removeProperty('--lg-light-x')
+      root.removeProperty('--lg-light-y')
+    }
+  }, [glassActive, nativeGlass])
+
+  useEffect(() => {
+    const root = document.documentElement.style
+    if (!glassActive || !topBarEl || !bottomBarEl) {
+      setGlassTop(0)
+      root.removeProperty('--lg-top')
+      root.removeProperty('--lg-bottom')
+      return
+    }
+    const measure = () => {
+      setGlassTop(topBarEl.offsetHeight)
+      root.setProperty('--lg-top', `${topBarEl.offsetHeight}px`)
+      root.setProperty('--lg-bottom', `${bottomBarEl.offsetHeight}px`)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(topBarEl)
+    observer.observe(bottomBarEl)
+    return () => {
+      observer.disconnect()
+      root.removeProperty('--lg-top')
+      root.removeProperty('--lg-bottom')
+    }
+  }, [glassActive, topBarEl, bottomBarEl])
 
   useEffect(() => {
     const unsub = window.clui.onWindowShown(() => { setWindowVisible(true); setWindowVisibility(true) })
@@ -303,12 +361,16 @@ export default function App() {
                 >
                   <div
                     data-clui-ui
-                    className="glass-surface overflow-hidden no-drag"
+                    data-glass={glassActive ? 'marketplace' : undefined}
+                    data-glass-radius={glassActive ? 24 : undefined}
+                    className={glassActive ? 'glass-surface overflow-hidden no-drag lg-surface' : 'glass-surface overflow-hidden no-drag'}
                     style={{
                       borderRadius: 24,
                       maxHeight: 470,
+                      ...(glassActive ? { position: 'relative' as const } : {}),
                     }}
                   >
+                    <LiquidGlassLayer />
                     <Suspense fallback={<div style={{ height: 300 }} />}><MarketplacePanel /></Suspense>
                   </div>
                 </motion.div>
@@ -318,7 +380,9 @@ export default function App() {
 
           <motion.div
             data-clui-ui
-            className="overflow-hidden flex flex-col drag-region"
+            data-glass={glassActive ? 'card' : undefined}
+            data-glass-radius={glassActive ? 20 : undefined}
+            className={glassActive ? 'overflow-hidden flex flex-col drag-region lg-surface' : 'overflow-hidden flex flex-col drag-region'}
             animate={{
               width: isExpanded ? cardExpandedWidth : cardCollapsedWidth,
               marginBottom: isExpanded ? 10 : -14,
@@ -337,7 +401,19 @@ export default function App() {
               zIndex: isExpanded ? 20 : 10,
             }}
           >
-            <div className="no-drag">
+            <LiquidGlassLayer />
+            <div
+              ref={setTopBarEl}
+              className="no-drag"
+              style={glassActive ? { position: 'relative', zIndex: 2 } : undefined}
+            >
+              {glassActive && (
+                <div aria-hidden className="lg-edge lg-edge-top">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              )}
               <TabStrip />
             </div>
 
@@ -346,13 +422,26 @@ export default function App() {
               animate={{
                 height: isExpanded ? 'auto' : 0,
                 opacity: isExpanded ? 1 : 0,
+                marginTop: isExpanded && glassActive ? -glassTop : 0,
               }}
               transition={{ type: 'spring', stiffness: 260, damping: 28, mass: 1.0, bounce: 0, opacity: { duration: 0.2, ease: 'easeInOut' } }}
               className="overflow-hidden no-drag"
             >
-              <div style={{ maxHeight: bodyMaxHeight }}>
+              <div style={glassActive ? { maxHeight: bodyMaxHeight + glassTop, position: 'relative' } : { maxHeight: bodyMaxHeight }}>
                 <ConversationView />
-                <StatusBar />
+                <div
+                  ref={setBottomBarEl}
+                  style={glassActive ? { position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 1, paddingTop: 28 } : undefined}
+                >
+                  {glassActive && (
+                    <div aria-hidden className="lg-edge lg-edge-bottom">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  )}
+                  <StatusBar />
+                </div>
               </div>
             </motion.div>
           </motion.div>
@@ -364,27 +453,36 @@ export default function App() {
             >
               <div className="btn-stack">
                 <button
-                  className="stack-btn stack-btn-1 glass-surface"
+                  className={glassActive ? 'stack-btn stack-btn-1 glass-surface lg-surface' : 'stack-btn stack-btn-1 glass-surface'}
+                  data-glass={glassActive ? 'button-1' : undefined}
+                  data-glass-radius={glassActive ? 23 : undefined}
                   title="Attach file"
                   onClick={handleAttachFile}
                   disabled={isRunning}
                 >
+                  <LiquidGlassLayer />
                   <Paperclip size={17} />
                 </button>
                 <button
-                  className="stack-btn stack-btn-2 glass-surface"
+                  className={glassActive ? 'stack-btn stack-btn-2 glass-surface lg-surface' : 'stack-btn stack-btn-2 glass-surface'}
+                  data-glass={glassActive ? 'button-2' : undefined}
+                  data-glass-radius={glassActive ? 23 : undefined}
                   title="Take screenshot"
                   onClick={handleScreenshot}
                   disabled={isRunning}
                 >
+                  <LiquidGlassLayer />
                   <Camera size={17} />
                 </button>
                 <button
-                  className="stack-btn stack-btn-3 glass-surface"
+                  className={glassActive ? 'stack-btn stack-btn-3 glass-surface lg-surface' : 'stack-btn stack-btn-3 glass-surface'}
+                  data-glass={glassActive ? 'button-3' : undefined}
+                  data-glass-radius={glassActive ? 23 : undefined}
                   title="Skills & Plugins"
                   onClick={() => useSessionStore.getState().toggleMarketplace()}
                   disabled={isRunning}
                 >
+                  <LiquidGlassLayer />
                   <HeadCircuit size={17} />
                 </button>
               </div>
@@ -392,9 +490,12 @@ export default function App() {
 
             <div
               data-clui-ui
-              className="glass-surface w-full"
-              style={{ minHeight: 50, borderRadius: 25, padding: '0 6px 0 16px', background: colors.inputPillBg }}
+              className={glassActive ? 'glass-surface w-full lg-surface' : 'glass-surface w-full'}
+              data-glass={glassActive ? 'input' : undefined}
+              data-glass-radius={glassActive ? 25 : undefined}
+              style={{ minHeight: 50, borderRadius: 25, padding: '0 6px 0 16px', background: colors.inputPillBg, ...(glassActive ? { position: 'relative' as const } : {}) }}
             >
+              <LiquidGlassLayer />
               <InputBar />
             </div>
 

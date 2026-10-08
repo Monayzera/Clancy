@@ -48,6 +48,9 @@ tokens/
 *.token
 *.tokens
 
+# Test artifacts
+.playwright-mcp/
+
 # Logs and runtime
 *.log
 .clui.pid

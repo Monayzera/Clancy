@@ -5,6 +5,7 @@ import { Clock, ChatCircle } from '@phosphor-icons/react'
 import { useSessionStore } from '../stores/sessionStore'
 import { usePopoverLayer } from './PopoverLayer'
 import { useColors } from '../theme'
+import { useLiquidGlass, GLASS_POPOVER } from '../hooks/useLiquidGlass'
 import type { SessionMeta } from '../../shared/types'
 
 function formatTimeAgo(isoDate: string): string {
@@ -47,6 +48,12 @@ export function HistoryPicker() {
   const [search, setSearch] = useState('')
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const popoverGlass = useLiquidGlass(GLASS_POPOVER)
+  const popoverGlassRef = popoverGlass.ref
+  const setPopoverNode = useCallback((node: HTMLDivElement | null) => {
+    popoverRef.current = node
+    popoverGlassRef(node)
+  }, [popoverGlassRef])
   const [pos, setPos] = useState<{ right: number; top?: number; bottom?: number; maxHeight?: number }>({ right: 0 })
 
   const updatePos = useCallback(() => {
@@ -129,13 +136,15 @@ export function HistoryPicker() {
 
       {popoverLayer && open && createPortal(
         <motion.div
-          ref={popoverRef}
+          ref={setPopoverNode}
+          data-glass={popoverGlass.filter ? 'popover-history' : undefined}
+          data-glass-radius={popoverGlass.filter ? 12 : undefined}
           data-clui-ui
           initial={{ opacity: 0, y: isExpanded ? -6 : 6, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: isExpanded ? -4 : 4, scale: 0.97 }}
           transition={{ type: 'spring', stiffness: 400, damping: 28, mass: 0.6 }}
-          className="rounded-xl"
+          className={popoverGlass.filter ? 'rounded-xl lg-surface' : 'rounded-xl'}
           style={{
             position: 'fixed',
             ...(pos.top != null ? { top: pos.top } : {}),
@@ -144,8 +153,8 @@ export function HistoryPicker() {
             width: 320,
             pointerEvents: 'auto',
             background: colors.popoverBg,
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            backdropFilter: popoverGlass.filter ?? 'blur(20px)',
+            WebkitBackdropFilter: popoverGlass.filter ?? 'blur(20px)',
             boxShadow: colors.popoverShadow,
             border: `1px solid ${colors.popoverBorder}`,
             ...(pos.maxHeight != null ? { maxHeight: pos.maxHeight } : {}),

@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
-import { DotsThree, Bell, ArrowsOutSimple, Moon, Brain, Lightning, Scroll, Plugs, Plus, X, Terminal, GlobeSimple, CaretLeft, Trash, Robot } from '@phosphor-icons/react'
+import { DotsThree, Bell, ArrowsOutSimple, Moon, Brain, Lightning, Scroll, Plugs, Plus, X, Terminal, GlobeSimple, CaretLeft, Trash, Robot, Drop } from '@phosphor-icons/react'
 import { useThemeStore, type EffortLevel } from '../theme'
 import { useSessionStore, MODELS_SUPPORTING_MAX_EFFORT, getEffectiveModelId } from '../stores/sessionStore'
 import { usePopoverLayer } from './PopoverLayer'
 import { useColors } from '../theme'
+import { useLiquidGlass, GLASS_POPOVER } from '../hooks/useLiquidGlass'
 
 function RowToggle({
   checked,
@@ -94,6 +95,9 @@ export function SettingsPopover() {
   const setEffort = useThemeStore((s) => s.setEffort)
   const thinkingEnabled = useThemeStore((s) => s.thinkingEnabled)
   const setThinkingEnabled = useThemeStore((s) => s.setThinkingEnabled)
+  const liquidGlass = useThemeStore((s) => s.liquidGlass)
+  const setLiquidGlass = useThemeStore((s) => s.setLiquidGlass)
+  const activeProvider = useThemeStore((s) => s.activeProvider)
   const defaultProvider = useThemeStore((s) => s.defaultProvider)
   const setDefaultProvider = useThemeStore((s) => s.setDefaultProvider)
   const globalRules = useThemeStore((s) => s.globalRules)
@@ -151,6 +155,12 @@ export function SettingsPopover() {
   const [orSaved, setOrSaved] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
+  const popoverGlass = useLiquidGlass(GLASS_POPOVER)
+  const popoverGlassRef = popoverGlass.ref
+  const setPopoverNode = useCallback((node: HTMLDivElement | null) => {
+    popoverRef.current = node
+    popoverGlassRef(node)
+  }, [popoverGlassRef])
   const [pos, setPos] = useState<{ right: number; top?: number; bottom?: number; maxHeight?: number }>({ right: 0 })
 
   const updatePos = useCallback(() => {
@@ -280,13 +290,15 @@ export function SettingsPopover() {
 
       {popoverLayer && open && createPortal(
         <motion.div
-          ref={popoverRef}
+          ref={setPopoverNode}
+          data-glass={popoverGlass.filter ? 'popover-settings' : undefined}
+          data-glass-radius={popoverGlass.filter ? 12 : undefined}
           data-clui-ui
           initial={{ opacity: 0, y: 6, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 4, scale: 0.97 }}
           transition={{ type: 'spring', stiffness: 400, damping: 28, mass: 0.6 }}
-          className="rounded-xl"
+          className={popoverGlass.filter ? 'rounded-xl lg-surface' : 'rounded-xl'}
           style={{
             position: 'fixed',
             ...(pos.top != null ? { top: pos.top } : {}),
@@ -296,8 +308,8 @@ export function SettingsPopover() {
             maxHeight: 420,
             pointerEvents: 'auto',
             background: colors.popoverBg,
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            backdropFilter: popoverGlass.filter ?? 'blur(20px)',
+            WebkitBackdropFilter: popoverGlass.filter ?? 'blur(20px)',
             boxShadow: colors.popoverShadow,
             border: `1px solid ${colors.popoverBorder}`,
             display: 'flex',
@@ -374,6 +386,24 @@ export function SettingsPopover() {
                       <RowToggle checked={themeMode === 'dark'} onChange={(next) => setThemeMode(next ? 'dark' : 'light')} colors={colors} label="Toggle dark theme" />
                     </div>
                   </div>
+
+                  {activeProvider === 'claude' && (
+                    <>
+                      <div style={{ height: 1, background: colors.popoverBorder }} />
+
+                      <div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Drop size={14} style={{ color: colors.textTertiary }} />
+                            <div className="text-[12px] font-medium" style={{ color: colors.textPrimary }}>
+                              Liquid glass
+                            </div>
+                          </div>
+                          <RowToggle checked={liquidGlass} onChange={setLiquidGlass} colors={colors} label="Toggle liquid glass" />
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   <div style={{ height: 1, background: colors.popoverBorder }} />
 

@@ -40,6 +40,134 @@ html, body, #root {
   -webkit-backdrop-filter: blur(20px) saturate(1.5);
 }
 
+.clui-glass {
+  --lg-tint: rgba(255, 255, 255, 0.8);
+  --lg-rim-strong: rgba(255, 255, 255, 0.95);
+  --lg-rim-mid: rgba(255, 255, 255, 0.6);
+  --lg-rim-soft: rgba(255, 255, 255, 0.28);
+  --lg-glow: rgba(255, 255, 255, 0.28);
+  --lg-shade: rgba(0, 0, 0, 0.05);
+}
+.clui-glass.clui-glass-light-ink {
+  --lg-tint: rgba(24, 24, 27, 0.72);
+  --lg-rim-strong: rgba(255, 255, 255, 0.85);
+  --lg-rim-mid: rgba(255, 255, 255, 0.36);
+  --lg-rim-soft: rgba(255, 255, 255, 0.14);
+  --lg-glow: rgba(255, 255, 255, 0.08);
+  --lg-shade: rgba(0, 0, 0, 0.2);
+}
+.clui-glass.clui-glass-native {
+  --lg-tint: rgba(255, 255, 255, 0.18);
+}
+.clui-glass.clui-glass-native.clui-glass-light-ink {
+  --lg-tint: rgba(0, 0, 0, 0.16);
+}
+
+.clui-glass .glass-surface {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.lg-layer {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: var(--lg-tint);
+}
+
+.lg-surface {
+  isolation: isolate;
+}
+.lg-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 1px 1px var(--lg-rim-mid),
+    inset 0 -1px 1px var(--lg-shade),
+    inset 0 0 22px var(--lg-glow);
+}
+.lg-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(circle 180px at var(--lg-light-x, 30%) var(--lg-light-y, 0%), var(--lg-rim-strong), transparent 70%) fixed,
+    linear-gradient(135deg, var(--lg-rim-mid) 0%, var(--lg-rim-soft) 24%, transparent 46%, transparent 62%, var(--lg-rim-soft) 84%, var(--lg-rim-mid) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.clui-glass-native .lg-surface::before,
+.clui-glass-native .lg-surface::after {
+  display: none;
+}
+
+.lg-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.lg-edge-top {
+  top: 0;
+  bottom: -28px;
+}
+.lg-edge-bottom {
+  top: -20px;
+  bottom: 0;
+}
+.lg-edge > span {
+  position: absolute;
+  inset: 0;
+}
+.lg-edge > span:nth-child(1) {
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.lg-edge > span:nth-child(2) {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.lg-edge > span:nth-child(3) {
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  background: var(--lg-tint);
+}
+.lg-edge-top > span:nth-child(1) {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+}
+.lg-edge-top > span:nth-child(2) {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 80%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 35%, transparent 80%);
+}
+.lg-edge-top > span:nth-child(3) {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 60%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 60%);
+}
+.lg-edge-bottom > span:nth-child(1) {
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
+}
+.lg-edge-bottom > span:nth-child(2) {
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 35%, transparent 80%);
+  mask-image: linear-gradient(to top, #000 0%, #000 35%, transparent 80%);
+}
+.lg-edge-bottom > span:nth-child(3) {
+  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 60%);
+  mask-image: linear-gradient(to top, #000 0%, transparent 60%);
+}
+
 /* ─── Textarea reset ─── */
 textarea {
   font-family: inherit;

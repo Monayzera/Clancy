@@ -1,0 +1,11 @@
+{
+  "name": "clui-native-glass",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Native macOS 26 Liquid Glass regions for Clui CC",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "license": "MIT",
+  "os": ["darwin"],
+  "gypfile": true
+}

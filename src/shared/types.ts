@@ -429,6 +429,8 @@ export const IPC = {
   NOTIFY_NATIVE: 'clui:notify-native',
   SET_IGNORE_MOUSE_EVENTS: 'clui:set-ignore-mouse-events',
   IS_VISIBLE: 'clui:is-visible',
+  GLASS_NATIVE_SUPPORTED: 'clui:glass-native-supported',
+  GLASS_SET_REGIONS: 'clui:glass-set-regions',
 
   // Skill provisioning (main → renderer)
   SKILL_STATUS: 'clui:skill-status',
@@ -455,6 +457,18 @@ export const IPC = {
   RUN_COMPLETE: 'clui:run-complete',
   RUN_ERROR: 'clui:run-error',
 } as const
+
+export interface GlassRegion {
+  id: string
+  x: number
+  y: number
+  width: number
+  height: number
+  radius: number
+  alpha: number
+  style: number
+  tint: [number, number, number, number] | null
+}
 
 export interface CodexQuota {
   primaryUsedPercent: number

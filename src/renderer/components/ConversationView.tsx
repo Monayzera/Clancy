@@ -15,7 +15,7 @@ import { PermissionCard } from './PermissionCard'
 import { PermissionDeniedCard } from './PermissionDeniedCard'
 import { AskUserQuestionCard } from './AskUserQuestionCard'
 import { DiffViewer } from './DiffViewer'
-import { useColors, useThemeStore } from '../theme'
+import { useColors, useThemeStore, useGlassActive } from '../theme'
 import type { Message, Attachment } from '../../shared/types'
 
 
@@ -73,6 +73,7 @@ export function ConversationView() {
   const prevTabIdRef = useRef(activeTabId)
   const colors = useColors()
   const expandedUI = useThemeStore((s) => s.expandedUI)
+  const glassActive = useGlassActive()
 
   useEffect(() => {
     if (activeTabId !== prevTabIdRef.current) {
@@ -136,6 +137,7 @@ export function ConversationView() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -4 }}
           transition={{ duration: 0.2, ease: [0.4, 0, 0.1, 1] }}
+          style={glassActive ? { paddingTop: 'var(--lg-top, 0px)', paddingBottom: 'calc(var(--lg-bottom, 28px) - 28px)' } : undefined}
         >
           <EmptyState />
         </motion.div>
@@ -172,7 +174,13 @@ export function ConversationView() {
       <div
         ref={scrollRef}
         className="overflow-y-auto overflow-x-hidden px-4 pt-2 conversation-selectable"
-        style={{ maxHeight: expandedUI ? 460 : 336, paddingBottom: 54 }}
+        style={glassActive
+          ? {
+              maxHeight: `calc(${expandedUI ? 460 : 336}px + var(--lg-top, 0px) + var(--lg-bottom, 28px) - 28px)`,
+              paddingTop: 'calc(8px + var(--lg-top, 0px))',
+              paddingBottom: 'calc(26px + var(--lg-bottom, 28px))',
+            }
+          : { maxHeight: expandedUI ? 460 : 336, paddingBottom: 54 }}
         onScroll={handleScroll}
       >
         {hasOlder && (
@@ -264,7 +272,8 @@ export function ConversationView() {
           height: 28,
           minHeight: 28,
           marginTop: -28,
-          background: `linear-gradient(to bottom, transparent, ${colors.containerBg} 60%)`,
+          background: glassActive ? 'transparent' : `linear-gradient(to bottom, transparent, ${colors.containerBg} 60%)`,
+          ...(glassActive ? { transform: 'translateY(calc(28px - var(--lg-bottom, 28px)))' } : {}),
           zIndex: 2,
           pointerEvents: 'none',
         }}
