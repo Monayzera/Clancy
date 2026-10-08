@@ -5,7 +5,7 @@ const APPEARANCE_AUTOMATIC = 0
 const STYLE_CLEAR = 1
 const VARIANT_SYSTEM_DEFAULT = -1
 const ADAPTIVE_OFF = 1
-const SUBTLE_DIM: GlassRegion['tint'] = [0, 0, 0, 0.05]
+const SUBTLE_DIM: GlassRegion['tint'] = [0, 0, 0, 0.08]
 
 function roundHalf(value: number): number {
   return Math.round(value * 2) / 2
