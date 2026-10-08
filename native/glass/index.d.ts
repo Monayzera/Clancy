@@ -7,6 +7,7 @@ export interface NativeGlassRegion {
   radius: number
   alpha: number
   style: number
+  appearance: number
   tint: [number, number, number, number] | null
 }
 

@@ -1,11 +1,13 @@
 #import <AppKit/AppKit.h>
 #import <QuartzCore/QuartzCore.h>
+#import <objc/message.h>
 #import <objc/runtime.h>
 #include <node_api.h>
 #include <cmath>
 #include <string>
 
 static char kGlassStateKey;
+static char kActiveAppearanceKey;
 static const uint32_t kMaxRegions = 32;
 
 @interface CluiGlassHostView : NSView
@@ -38,6 +40,7 @@ struct GlassRegion {
   double radius = 0;
   double alpha = 1;
   int32_t style = 0;
+  int32_t appearance = 0;
   bool hasTint = false;
   double tint[4] = {0, 0, 0, 0};
 };
@@ -84,6 +87,8 @@ static bool ReadRegion(napi_env env, napi_value object, GlassRegion *region) {
   if (!ReadNumber(env, object, "alpha", &region->alpha)) return false;
   double style = 0;
   if (ReadNumber(env, object, "style", &style)) region->style = style >= 1 ? 1 : 0;
+  double appearance = 0;
+  if (ReadNumber(env, object, "appearance", &appearance)) region->appearance = appearance >= 2 ? 2 : (appearance >= 1 ? 1 : 0);
 
   napi_value tintValue;
   bool isArray = false;
@@ -121,6 +126,33 @@ static NSView *ContentViewFromHandle(napi_env env, napi_value handle) {
   return window && window.contentView ? window.contentView : view;
 }
 
+static void KeepActiveAppearance(NSWindow *window) {
+  if (!window || objc_getAssociatedObject(window, &kActiveAppearanceKey)) return;
+  objc_setAssociatedObject(window, &kActiveAppearanceKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  static NSMutableSet<NSString *> *patchedClasses;
+  if (!patchedClasses) patchedClasses = [NSMutableSet set];
+  Class windowClass = object_getClass(window);
+  NSString *className = NSStringFromClass(windowClass);
+  if (![patchedClasses containsObject:className]) {
+    [patchedClasses addObject:className];
+    for (NSString *name in @[ @"_hasActiveAppearance", @"_hasActiveAppearanceIgnoringKeyFocus" ]) {
+      SEL selector = NSSelectorFromString(name);
+      Method existing = class_getInstanceMethod(windowClass, selector);
+      if (!existing) continue;
+      BOOL (*original)(id, SEL) = (BOOL (*)(id, SEL))method_getImplementation(existing);
+      IMP replacement = imp_implementationWithBlock(^BOOL(id target) {
+        if (objc_getAssociatedObject(target, &kActiveAppearanceKey)) return YES;
+        return original(target, selector);
+      });
+      if (!class_addMethod(windowClass, selector, replacement, method_getTypeEncoding(existing))) {
+        method_setImplementation(existing, replacement);
+      }
+    }
+  }
+  SEL refresh = NSSelectorFromString(@"_setHasActiveAppearance:");
+  if ([window respondsToSelector:refresh]) ((void (*)(id, SEL, BOOL))objc_msgSend)(window, refresh, YES);
+}
+
 API_AVAILABLE(macos(26.0))
 static CluiGlassState *StateForView(NSView *content, bool create) {
   CluiGlassState *state = objc_getAssociatedObject(content, &kGlassStateKey);
@@ -136,6 +168,7 @@ static CluiGlassState *StateForView(NSView *content, bool create) {
     state.host = host;
     state.views = [NSMutableDictionary dictionary];
     objc_setAssociatedObject(content, &kGlassStateKey, state, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    KeepActiveAppearance(content.window);
   }
   if (state && content.subviews.firstObject != state.container) {
     [state.container removeFromSuperview];
@@ -191,6 +224,9 @@ static napi_value SetRegions(napi_env env, napi_callback_info info) {
       glass.frame = NSMakeRect(region.x, region.y, fmax(0, region.width), fmax(0, region.height));
       glass.cornerRadius = fmax(0, region.radius);
       glass.style = region.style == 1 ? NSGlassEffectViewStyleClear : NSGlassEffectViewStyleRegular;
+      glass.appearance = region.appearance == 2 ? [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua]
+          : region.appearance == 1 ? [NSAppearance appearanceNamed:NSAppearanceNameAqua]
+          : nil;
       glass.tintColor = region.hasTint
           ? [NSColor colorWithSRGBRed:region.tint[0] green:region.tint[1] blue:region.tint[2] alpha:region.tint[3]]
           : nil;

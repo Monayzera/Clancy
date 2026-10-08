@@ -1,8 +1,10 @@
 import { useThemeStore, isGlassActive } from '../theme'
 import type { GlassRegion } from '../../shared/types'
 
-const DARK_TINT: GlassRegion['tint'] = [0, 0, 0, 0.18]
-const LIGHT_TINT: GlassRegion['tint'] = [1, 1, 1, 0.22]
+const APPEARANCE_LIGHT = 1
+const APPEARANCE_DARK = 2
+const CLEAR_DIM_DARK: GlassRegion['tint'] = [0, 0, 0, 0.3]
+const CLEAR_DIM_LIGHT: GlassRegion['tint'] = [1, 1, 1, 0.35]
 
 function roundHalf(value: number): number {
   return Math.round(value * 2) / 2
@@ -17,7 +19,7 @@ function effectiveOpacity(element: Element): number {
   return alpha
 }
 
-function collectRegions(tint: GlassRegion['tint']): GlassRegion[] {
+function collectRegions(appearance: number): GlassRegion[] {
   const regions: GlassRegion[] = []
   document.querySelectorAll<HTMLElement>('[data-glass]').forEach((element) => {
     const id = element.dataset.glass
@@ -28,6 +30,7 @@ function collectRegions(tint: GlassRegion['tint']): GlassRegion[] {
     const rect = element.getBoundingClientRect()
     const scale = rect.width / layoutWidth
     const radius = (Number(element.dataset.glassRadius) || 0) * scale
+    const clear = element.dataset.glassStyle === 'clear'
     regions.push({
       id,
       x: roundHalf(rect.left),
@@ -36,8 +39,9 @@ function collectRegions(tint: GlassRegion['tint']): GlassRegion[] {
       height: roundHalf(rect.height),
       radius: roundHalf(radius),
       alpha: Math.round(alpha * 100) / 100,
-      style: 0,
-      tint,
+      style: clear ? 1 : 0,
+      appearance,
+      tint: clear ? (appearance === APPEARANCE_DARK ? CLEAR_DIM_DARK : CLEAR_DIM_LIGHT) : null,
     })
   })
   return regions
@@ -66,7 +70,7 @@ export function initNativeGlass(): () => void {
       send([])
       return
     }
-    send(collectRegions(state.isDark ? DARK_TINT : LIGHT_TINT))
+    send(collectRegions(state.isDark ? APPEARANCE_DARK : APPEARANCE_LIGHT))
     frame = requestAnimationFrame(tick)
   }
 

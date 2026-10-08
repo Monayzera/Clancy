@@ -456,6 +456,7 @@ export default function App() {
                   className={glassActive ? 'stack-btn stack-btn-1 glass-surface lg-surface' : 'stack-btn stack-btn-1 glass-surface'}
                   data-glass={glassActive ? 'button-1' : undefined}
                   data-glass-radius={glassActive ? 23 : undefined}
+                  data-glass-style={glassActive ? 'clear' : undefined}
                   title="Attach file"
                   onClick={handleAttachFile}
                   disabled={isRunning}
@@ -467,6 +468,7 @@ export default function App() {
                   className={glassActive ? 'stack-btn stack-btn-2 glass-surface lg-surface' : 'stack-btn stack-btn-2 glass-surface'}
                   data-glass={glassActive ? 'button-2' : undefined}
                   data-glass-radius={glassActive ? 23 : undefined}
+                  data-glass-style={glassActive ? 'clear' : undefined}
                   title="Take screenshot"
                   onClick={handleScreenshot}
                   disabled={isRunning}
@@ -478,6 +480,7 @@ export default function App() {
                   className={glassActive ? 'stack-btn stack-btn-3 glass-surface lg-surface' : 'stack-btn stack-btn-3 glass-surface'}
                   data-glass={glassActive ? 'button-3' : undefined}
                   data-glass-radius={glassActive ? 23 : undefined}
+                  data-glass-style={glassActive ? 'clear' : undefined}
                   title="Skills & Plugins"
                   onClick={() => useSessionStore.getState().toggleMarketplace()}
                   disabled={isRunning}
@@ -493,6 +496,7 @@ export default function App() {
               className={glassActive ? 'glass-surface w-full lg-surface' : 'glass-surface w-full'}
               data-glass={glassActive ? 'input' : undefined}
               data-glass-radius={glassActive ? 25 : undefined}
+              data-glass-style={glassActive ? 'clear' : undefined}
               style={{ minHeight: 50, borderRadius: 25, padding: '0 6px 0 16px', background: colors.inputPillBg, ...(glassActive ? { position: 'relative' as const } : {}) }}
             >
               <LiquidGlassLayer />
