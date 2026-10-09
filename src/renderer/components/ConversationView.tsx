@@ -17,6 +17,7 @@ import { AskUserQuestionCard } from './AskUserQuestionCard'
 import { DiffViewer } from './DiffViewer'
 import { useColors, useThemeStore, useGlassActive } from '../theme'
 import type { Message, Attachment } from '../../shared/types'
+import { acceleratorLabels } from '../../shared/accelerator'
 
 
 const INITIAL_RENDER_CAP = 100
@@ -323,6 +324,7 @@ export function ConversationView() {
 
 
 function EmptyState() {
+  const linuxShortcut = useThemeStore((s) => s.linuxShortcut)
   const setBaseDirectory = useSessionStore((s) => s.setBaseDirectory)
   const colors = useColors()
 
@@ -366,7 +368,7 @@ function EmptyState() {
         Choose folder
       </button>
       <span className="text-[11px]" style={{ color: colors.textTertiary }}>
-        Press <strong style={{ color: colors.textSecondary }}>⌥ + Space</strong> to show/hide this overlay
+        Press <strong style={{ color: colors.textSecondary }}>{window.clui?.platform === 'linux' ? acceleratorLabels(linuxShortcut).join(' + ') : '⌥ + Space'}</strong> to show/hide this overlay
       </span>
     </div>
   )
