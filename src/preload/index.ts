@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IPC } from '../shared/types'
-import type { AskUserQuestionAnswer, RunOptions, NormalizedEvent, HealthReport, EnrichedError, Attachment, SessionMeta, CatalogPlugin, SessionLoadMessage, CodexQuota, GlassRegion, GlassTone } from '../shared/types'
+import type { AskUserQuestionAnswer, RunOptions, NormalizedEvent, HealthReport, EnrichedError, Attachment, SessionMeta, CatalogPlugin, SessionLoadMessage, CodexQuota, GlassRegion, GlassTone, GlobalShortcutStatus } from '../shared/types'
 
 export interface CluiAPI {
   // ─── Request-response (renderer → main) ───
@@ -62,6 +62,12 @@ export interface CluiAPI {
   isNativeGlassSupported(): Promise<boolean>
   setGlassRegions(regions: GlassRegion[]): void
   onGlassTone(callback: (tone: GlassTone | null) => void): () => void
+  onNativeGlassChange(callback: (supported: boolean) => void): () => void
+  isInputRegionSupported(): Promise<boolean>
+  setInputRegion(rects: number[]): void
+  platform: string
+  setGlobalShortcut(accelerator: string | null): void
+  onGlobalShortcutStatus(callback: (status: GlobalShortcutStatus) => void): () => void
   notifyNative(payload: { title: string; body: string }): void
 }
 
@@ -189,6 +195,26 @@ const api: CluiAPI = {
     const handler = (_e: Electron.IpcRendererEvent, tone: GlassTone | null) => callback(tone)
     ipcRenderer.on(IPC.GLASS_TONE, handler)
     return () => ipcRenderer.removeListener(IPC.GLASS_TONE, handler)
+  },
+
+  onNativeGlassChange: (callback) => {
+    const handler = (_e: Electron.IpcRendererEvent, supported: boolean) => callback(supported)
+    ipcRenderer.on(IPC.GLASS_NATIVE_CHANGED, handler)
+    return () => ipcRenderer.removeListener(IPC.GLASS_NATIVE_CHANGED, handler)
+  },
+
+  isInputRegionSupported: () => ipcRenderer.invoke(IPC.INPUT_REGION_SUPPORTED),
+
+  setInputRegion: (rects) => ipcRenderer.send(IPC.SET_INPUT_REGION, rects),
+
+  platform: process.platform,
+
+  setGlobalShortcut: (accelerator) => ipcRenderer.send(IPC.SET_GLOBAL_SHORTCUT, accelerator),
+
+  onGlobalShortcutStatus: (callback) => {
+    const handler = (_e: Electron.IpcRendererEvent, status: GlobalShortcutStatus) => callback(status)
+    ipcRenderer.on(IPC.GLOBAL_SHORTCUT_STATUS, handler)
+    return () => ipcRenderer.removeListener(IPC.GLOBAL_SHORTCUT_STATUS, handler)
   },
 }
 

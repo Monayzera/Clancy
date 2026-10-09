@@ -432,6 +432,11 @@ export const IPC = {
   GLASS_NATIVE_SUPPORTED: 'clui:glass-native-supported',
   GLASS_SET_REGIONS: 'clui:glass-set-regions',
   GLASS_TONE: 'clui:glass-tone',
+  GLASS_NATIVE_CHANGED: 'clui:glass-native-changed',
+  INPUT_REGION_SUPPORTED: 'clui:input-region-supported',
+  SET_INPUT_REGION: 'clui:set-input-region',
+  SET_GLOBAL_SHORTCUT: 'clui:set-global-shortcut',
+  GLOBAL_SHORTCUT_STATUS: 'clui:global-shortcut-status',
 
   // Skill provisioning (main → renderer)
   SKILL_STATUS: 'clui:skill-status',
@@ -461,6 +466,8 @@ export const IPC = {
 
 export type GlassTone = 'light' | 'dark'
 
+export type GlobalShortcutStatus = 'active' | 'conflict' | 'unavailable'
+
 export interface GlassRegion {
   id: string
   x: number
@@ -475,6 +482,7 @@ export interface GlassRegion {
   adaptive: number
   tint: [number, number, number, number] | null
   paths?: number[][]
+  circles?: number[][]
 }
 
 export interface CodexQuota {

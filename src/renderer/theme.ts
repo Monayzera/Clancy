@@ -3,7 +3,8 @@
  * Colors derived from ChatCN oklch system and design-fixed.html reference.
  */
 import { create } from 'zustand'
-import type { GlassTone } from '../shared/types'
+import type { GlassTone, GlobalShortcutStatus } from '../shared/types'
+import { DEFAULT_LINUX_SHORTCUT, isValidAccelerator } from '../shared/accelerator'
 
 // ─── Color palettes ───
 
@@ -602,6 +603,9 @@ interface ThemeState {
   reducedTransparency: boolean
   nativeGlass: boolean
   glassTone: GlassTone | null
+  linuxShortcut: string
+  linuxShortcutRecording: boolean
+  linuxShortcutStatus: GlobalShortcutStatus | null
   defaultProvider: 'claude' | 'openclaude' | 'codex'
   activeProvider: 'claude' | 'openclaude' | 'codex'
   globalRules: string
@@ -621,6 +625,9 @@ interface ThemeState {
   setReducedTransparency: (reduced: boolean) => void
   setNativeGlass: (supported: boolean) => void
   setGlassTone: (tone: GlassTone | null) => void
+  setLinuxShortcut: (accelerator: string) => void
+  setLinuxShortcutRecording: (recording: boolean) => void
+  setLinuxShortcutStatus: (status: GlobalShortcutStatus | null) => void
   setGlobalRules: (rules: string) => void
   setActiveProfile: (id: string | null) => void
   createProfile: (name: string) => RulesProfile | null
@@ -710,7 +717,7 @@ function saveRulesV1(state: { profiles: RulesProfile[]; activeProfileId: string 
   try { localStorage.setItem(RULES_V1_KEY, JSON.stringify({ version: 1, ...state })) } catch {}
 }
 
-function loadSettings(): { themeMode: ThemeMode; soundEnabled: boolean; expandedUI: boolean; effort: EffortLevel; thinkingEnabled: boolean; liquidGlass: boolean; defaultProvider: 'claude' | 'openclaude' | 'codex' } {
+function loadSettings(): { themeMode: ThemeMode; soundEnabled: boolean; expandedUI: boolean; effort: EffortLevel; thinkingEnabled: boolean; liquidGlass: boolean; defaultProvider: 'claude' | 'openclaude' | 'codex'; linuxShortcut: string } {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY)
     if (raw) {
@@ -727,13 +734,14 @@ function loadSettings(): { themeMode: ThemeMode; soundEnabled: boolean; expanded
           : parsed.defaultProvider === 'openclaude'
             ? 'openclaude'
             : 'claude',
+        linuxShortcut: isValidAccelerator(parsed.linuxShortcut) ? parsed.linuxShortcut : DEFAULT_LINUX_SHORTCUT,
       }
     }
   } catch {}
-  return { themeMode: 'dark', soundEnabled: true, expandedUI: false, effort: 'medium', thinkingEnabled: true, liquidGlass: true, defaultProvider: 'claude' }
+  return { themeMode: 'dark', soundEnabled: true, expandedUI: false, effort: 'medium', thinkingEnabled: true, liquidGlass: true, defaultProvider: 'claude', linuxShortcut: DEFAULT_LINUX_SHORTCUT }
 }
 
-function saveSettings(s: { themeMode: ThemeMode; soundEnabled: boolean; expandedUI: boolean; effort: EffortLevel; thinkingEnabled: boolean; liquidGlass: boolean; defaultProvider: 'claude' | 'openclaude' | 'codex' }): void {
+function saveSettings(s: { themeMode: ThemeMode; soundEnabled: boolean; expandedUI: boolean; effort: EffortLevel; thinkingEnabled: boolean; liquidGlass: boolean; defaultProvider: 'claude' | 'openclaude' | 'codex'; linuxShortcut: string }): void {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)) } catch {}
 }
 
@@ -751,6 +759,9 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   reducedTransparency: typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-reduced-transparency: reduce)').matches : false,
   nativeGlass: false,
   glassTone: null,
+  linuxShortcut: saved.linuxShortcut,
+  linuxShortcutRecording: false,
+  linuxShortcutStatus: null,
   defaultProvider: saved.defaultProvider,
   activeProvider: saved.defaultProvider,
   globalRules: savedRules.activeProfileId !== null
@@ -763,7 +774,7 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
   setDefaultProvider: (provider) => {
     set({ defaultProvider: provider })
     const s = get()
-    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: provider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: provider, linuxShortcut: s.linuxShortcut })
   },
   setActiveProvider: (provider) => {
     const s = get()
@@ -788,33 +799,33 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     const provider = active === 'openclaude' ? undefined : active
     applyTheme(resolved, provider, glassPalette(get()))
     const s = get()
-    saveSettings({ themeMode: mode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: mode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider, linuxShortcut: s.linuxShortcut })
   },
   setSoundEnabled: (enabled) => {
     set({ soundEnabled: enabled })
     const s = get()
-    saveSettings({ themeMode: s.themeMode, soundEnabled: enabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: enabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider, linuxShortcut: s.linuxShortcut })
   },
   setExpandedUI: (expanded) => {
     set({ expandedUI: expanded })
     const s = get()
-    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: expanded, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: expanded, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider, linuxShortcut: s.linuxShortcut })
   },
   setEffort: (effort) => {
     set({ effort })
     const s = get()
-    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider, linuxShortcut: s.linuxShortcut })
   },
   setThinkingEnabled: (thinkingEnabled) => {
     set({ thinkingEnabled })
     const s = get()
-    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider, linuxShortcut: s.linuxShortcut })
   },
   setLiquidGlass: (liquidGlass) => {
     set({ liquidGlass })
     const s = get()
     if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', glassPalette(s))
-    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass, defaultProvider: s.defaultProvider })
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass, defaultProvider: s.defaultProvider, linuxShortcut: s.linuxShortcut })
   },
   setReducedTransparency: (reducedTransparency) => {
     if (get().reducedTransparency === reducedTransparency) return
@@ -833,6 +844,20 @@ export const useThemeStore = create<ThemeState>((set, get) => ({
     set({ glassTone })
     const s = get()
     if (s.activeProvider === 'claude') applyTheme(s.isDark, 'claude', glassPalette(s))
+  },
+  setLinuxShortcut: (linuxShortcut) => {
+    if (!isValidAccelerator(linuxShortcut)) return
+    set({ linuxShortcut })
+    const s = get()
+    saveSettings({ themeMode: s.themeMode, soundEnabled: s.soundEnabled, expandedUI: s.expandedUI, effort: s.effort, thinkingEnabled: s.thinkingEnabled, liquidGlass: s.liquidGlass, defaultProvider: s.defaultProvider, linuxShortcut })
+  },
+  setLinuxShortcutRecording: (linuxShortcutRecording) => {
+    if (get().linuxShortcutRecording === linuxShortcutRecording) return
+    set({ linuxShortcutRecording })
+  },
+  setLinuxShortcutStatus: (linuxShortcutStatus) => {
+    if (get().linuxShortcutStatus === linuxShortcutStatus) return
+    set({ linuxShortcutStatus })
   },
   setGlobalRules: (rules) => {
     get().setRulesContent(rules)

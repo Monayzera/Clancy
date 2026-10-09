@@ -138,6 +138,31 @@ export function measureBlob(element: HTMLElement, k: number = BLOB_BLEND): BlobS
   }
 }
 
+export function measureBlobCircles(element: HTMLElement, k: number = BLOB_BLEND): { x: number; y: number; width: number; height: number; circles: number[][] } | null {
+  const circles: number[][] = []
+  let minX = Number.POSITIVE_INFINITY
+  let minY = Number.POSITIVE_INFINITY
+  let maxX = Number.NEGATIVE_INFINITY
+  let maxY = Number.NEGATIVE_INFINITY
+  element.querySelectorAll<HTMLElement>('[data-glass-circle]').forEach((node) => {
+    const rect = node.getBoundingClientRect()
+    if (rect.width <= 0 || rect.height <= 0) return
+    const r = Math.min(rect.width, rect.height) / 2
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
+    circles.push([round2(cx), round2(cy), round2(r)])
+    minX = Math.min(minX, cx - r)
+    minY = Math.min(minY, cy - r)
+    maxX = Math.max(maxX, cx + r)
+    maxY = Math.max(maxY, cy + r)
+  })
+  if (circles.length === 0) return null
+  const pad = k / 4
+  const x = Math.floor(minX - pad)
+  const y = Math.floor(minY - pad)
+  return { x, y, width: Math.ceil(maxX + pad) - x, height: Math.ceil(maxY + pad) - y, circles }
+}
+
 export function blobSvgPath(paths: number[][], offsetX: number, offsetY: number, scale: number): string {
   const factor = scale > 0 ? 1 / scale : 1
   return paths

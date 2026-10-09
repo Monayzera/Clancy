@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion } from 'framer-motion'
-import { DotsThree, Bell, ArrowsOutSimple, Moon, Brain, Lightning, Scroll, Plugs, Plus, X, Terminal, GlobeSimple, CaretLeft, Trash, Robot, Drop } from '@phosphor-icons/react'
+import { DotsThree, Bell, ArrowsOutSimple, Moon, Brain, Lightning, Scroll, Plugs, Plus, X, Terminal, GlobeSimple, CaretLeft, Trash, Robot, Drop, Keyboard } from '@phosphor-icons/react'
 import { useThemeStore, type EffortLevel } from '../theme'
+import { acceleratorFromKeyEvent, acceleratorLabels } from '../../shared/accelerator'
 import { useSessionStore, MODELS_SUPPORTING_MAX_EFFORT, getEffectiveModelId } from '../stores/sessionStore'
 import { usePopoverLayer } from './PopoverLayer'
 import { useColors } from '../theme'
@@ -39,6 +40,85 @@ function RowToggle({
         }}
       />
     </button>
+  )
+}
+
+function ShortcutRecorder({ colors }: { colors: ReturnType<typeof useColors> }) {
+  const accelerator = useThemeStore((s) => s.linuxShortcut)
+  const recording = useThemeStore((s) => s.linuxShortcutRecording)
+  const status = useThemeStore((s) => s.linuxShortcutStatus)
+  const setLinuxShortcut = useThemeStore((s) => s.setLinuxShortcut)
+  const setRecording = useThemeStore((s) => s.setLinuxShortcutRecording)
+
+  useEffect(() => () => setRecording(false), [setRecording])
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (!recording) return
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.key === 'Escape') {
+      setRecording(false)
+      return
+    }
+    const next = acceleratorFromKeyEvent(e)
+    if (!next) return
+    setLinuxShortcut(next)
+    setRecording(false)
+  }
+
+  const hint = recording
+    ? 'Press the new shortcut · Esc to cancel'
+    : status === 'conflict'
+      ? 'Already used by the system · choose another'
+      : status === 'unavailable'
+        ? 'Activates after you log out and back in'
+        : null
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Keyboard size={14} style={{ color: colors.textTertiary }} />
+          <div className="text-[12px] font-medium" style={{ color: colors.textPrimary }}>
+            Shortcut
+          </div>
+        </div>
+        <button
+          type="button"
+          aria-label="Change global shortcut"
+          aria-pressed={recording}
+          onClick={() => setRecording(!recording)}
+          onKeyDown={onKeyDown}
+          onBlur={() => setRecording(false)}
+          className="flex items-center gap-1 rounded-lg transition-colors"
+          style={{
+            padding: '2px 4px',
+            minHeight: 24,
+            background: colors.surfaceSecondary,
+            border: `1px solid ${recording ? colors.accent : colors.containerBorder}`,
+          }}
+        >
+          {recording ? (
+            <span className="text-[11px] px-1" style={{ color: colors.textTertiary }}>Press keys…</span>
+          ) : (
+            acceleratorLabels(accelerator).map((label) => (
+              <span
+                key={label}
+                className="text-[11px] font-medium rounded-md"
+                style={{ padding: '1px 6px', color: colors.textPrimary, background: colors.surfacePrimary }}
+              >
+                {label}
+              </span>
+            ))
+          )}
+        </button>
+      </div>
+      {hint && (
+        <div className="text-[11px]" style={{ color: status === 'conflict' && !recording ? colors.statusError : colors.textTertiary, paddingLeft: 22 }}>
+          {hint}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -402,6 +482,14 @@ export function SettingsPopover() {
                           <RowToggle checked={liquidGlass} onChange={setLiquidGlass} colors={colors} label="Toggle liquid glass" />
                         </div>
                       </div>
+                    </>
+                  )}
+
+                  {window.clui?.platform === 'linux' && (
+                    <>
+                      <div style={{ height: 1, background: colors.popoverBorder }} />
+
+                      <ShortcutRecorder colors={colors} />
                     </>
                   )}
 

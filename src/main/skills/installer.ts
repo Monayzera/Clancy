@@ -95,10 +95,11 @@ async function installGithubSkill(
     const tarballUrl = `https://api.github.com/repos/${repo}/tarball/${commitSha}`
 
     // Use curl + tar — both always available on macOS
+    const tarWildcards = process.platform === 'linux' ? '--wildcards ' : ''
     const cmd = [
       `curl -sL "${tarballUrl}"`,
       '|',
-      `tar -xz --strip-components=${pathDepth} -C "${tmpDir}" "*/${path}"`,
+      `tar -xz --strip-components=${pathDepth} -C "${tmpDir}" ${tarWildcards}"*/${path}"`,
     ].join(' ')
 
     execSync(cmd, { timeout: 60000, stdio: 'pipe' })

@@ -12,7 +12,10 @@ import { fetchCatalog, listInstalled, installPlugin, uninstallPlugin } from './m
 import { log as _log, LOG_FILE, flushLogs } from './logger'
 import { getCliEnv } from './cli-env'
 import { IPC } from '../shared/types'
-import type { AskUserQuestionAnswer, RunOptions, NormalizedEvent, EnrichedError, CodexQuota, GlassRegion, GlassTone } from '../shared/types'
+import type { AskUserQuestionAnswer, RunOptions, NormalizedEvent, EnrichedError, CodexQuota, GlassRegion, GlassTone, GlobalShortcutStatus } from '../shared/types'
+import { isValidAccelerator } from '../shared/accelerator'
+import { GnomeBridge, type BridgeMessage } from './gnome-bridge'
+import { bundledExtensionVersion, ensureGnomeExtension, isGnomeSession } from './gnome-extension'
 
 const DEBUG_MODE = process.env.CLUI_DEBUG === '1'
 const SPACES_DEBUG = DEBUG_MODE || process.env.CLUI_SPACES_DEBUG === '1'
@@ -227,7 +230,7 @@ function createWindow(): void {
     },
   })
 
-  if (process.platform === 'win32') {
+  if (process.platform === 'win32' || process.platform === 'linux') {
     Menu.setApplicationMenu(null)
     mainWindow.removeMenu()
     mainWindow.setMenuBarVisibility(false)
@@ -239,6 +242,7 @@ function createWindow(): void {
   mainWindow.setAlwaysOnTop(true, 'screen-saver')
 
   mainWindow.on('show', () => scheduleGlassToneSample())
+  if (process.platform === 'linux') mainWindow.on('show', () => applyInputRegion(mainWindow))
   mainWindow.on('moved', () => scheduleGlassToneSample())
   mainWindow.webContents.on('did-finish-load', () => {
     glassRegions = []
@@ -252,7 +256,8 @@ function createWindow(): void {
 
   mainWindow.once('ready-to-show', () => {
     showWindow('ready-to-show')
-    mainWindow?.setIgnoreMouseEvents(true, { forward: true })
+    if (process.platform === 'linux') applyInputRegion(mainWindow)
+    else mainWindow?.setIgnoreMouseEvents(true, { forward: true })
     if (process.env.ELECTRON_RENDERER_URL) {
       mainWindow?.webContents.on('console-message', (_e, level, message) => {
         if (level === 3 && (message.includes('Autofill.') || message.includes('is not valid JSON'))) {
@@ -312,6 +317,7 @@ function showWindow(source = 'unknown'): void {
   // without deactivating the active app — hover preserved everywhere.
   mainWindow.show()
   if (process.platform === 'win32') mainWindow.focus()
+  if (process.platform === 'linux') gnomeBridge?.send({ type: 'activate' })
   mainWindow.webContents.focus()
   broadcast(IPC.WINDOW_SHOWN)
   if (SPACES_DEBUG) scheduleToggleSnapshots(toggleId, 'show')
@@ -335,6 +341,27 @@ function toggleWindow(source = 'unknown'): void {
     }, 185)
   } else {
     showWindow(source)
+  }
+}
+
+function whiteTrayIcon(image: Electron.NativeImage): Electron.NativeImage {
+  try {
+    const result = nativeImage.createEmpty()
+    for (const scaleFactor of image.getScaleFactors()) {
+      const { width, height } = image.getSize(scaleFactor)
+      const bitmap = Buffer.from(image.toBitmap({ scaleFactor }))
+      for (let i = 0; i < bitmap.length; i += 4) {
+        const alpha = bitmap[i + 3]
+        bitmap[i] = alpha
+        bitmap[i + 1] = alpha
+        bitmap[i + 2] = alpha
+      }
+      result.addRepresentation({ scaleFactor, width: Math.round(width * scaleFactor), height: Math.round(height * scaleFactor), buffer: bitmap })
+    }
+    return result.isEmpty() ? image : result
+  } catch (err) {
+    log(`[tray] recolor failed: ${err instanceof Error ? err.message : String(err)}`)
+    return image
   }
 }
 
@@ -392,6 +419,7 @@ interface NativeGlassModule {
 const MAX_GLASS_REGIONS = 32
 const MAX_GLASS_SUBPATHS = 8
 const MAX_GLASS_PATH_VALUES = 2048
+const MAX_GLASS_CIRCLES = 16
 const GLASS_TONE_THRESHOLD = 0.22
 const GLASS_TONE_LIGHT_ABOVE = 0.26
 const GLASS_TONE_DARK_BELOW = 0.18
@@ -439,6 +467,19 @@ function readGlassPaths(source: object): number[][] | null {
   return paths.length > 0 ? paths : null
 }
 
+function readGlassCircles(source: object): number[][] | null {
+  const value: unknown = Reflect.get(source, 'circles')
+  if (!Array.isArray(value)) return null
+  const entries: unknown[] = value.slice(0, MAX_GLASS_CIRCLES)
+  const circles: number[][] = []
+  for (const entry of entries) {
+    if (!Array.isArray(entry) || entry.length !== 3) continue
+    const values: unknown[] = entry
+    if (values.every(isFiniteNumber)) circles.push(values as number[])
+  }
+  return circles.length > 0 ? circles : null
+}
+
 function parseGlassRegions(value: unknown): GlassRegion[] {
   if (!Array.isArray(value)) return []
   const items: unknown[] = value.slice(0, MAX_GLASS_REGIONS)
@@ -467,6 +508,8 @@ function parseGlassRegions(value: unknown): GlassRegion[] {
     const region: GlassRegion = { id, x, y, width, height, radius, alpha, style, appearance, variant, adaptive, tint }
     const paths = readGlassPaths(item)
     if (paths) region.paths = paths
+    const circles = readGlassCircles(item)
+    if (circles) region.circles = circles
     regions.push(region)
   }
   return regions
@@ -499,17 +542,22 @@ async function sampleGlassTone(): Promise<void> {
 }
 
 function scheduleGlassToneSample(delay = GLASS_SAMPLE_DELAY_MS): void {
-  if (!nativeGlass) return
+  if (!nativeGlass && !gnomeGlassAvailable) return
   if (glassSampleTimer) clearTimeout(glassSampleTimer)
   glassSampleTimer = setTimeout(() => {
     glassSampleTimer = null
-    void sampleGlassTone()
+    if (process.platform === 'linux') requestGnomeGlassTone()
+    else void sampleGlassTone()
   }, delay)
 }
 
-ipcMain.handle(IPC.GLASS_NATIVE_SUPPORTED, () => nativeGlass !== null)
+ipcMain.handle(IPC.GLASS_NATIVE_SUPPORTED, () => (process.platform === 'linux' ? gnomeGlassAvailable : nativeGlass !== null))
 
 ipcMain.on(IPC.GLASS_SET_REGIONS, (event, regions: unknown) => {
+  if (process.platform === 'linux') {
+    forwardGnomeGlassRegions(event.sender, regions)
+    return
+  }
   if (!nativeGlass) return
   const win = BrowserWindow.fromWebContents(event.sender)
   if (!win || win.isDestroyed()) return
@@ -527,10 +575,205 @@ ipcMain.on(IPC.GLASS_SET_REGIONS, (event, regions: unknown) => {
 
 ipcMain.on(IPC.SET_IGNORE_MOUSE_EVENTS, (event, ignore: boolean, options?: { forward?: boolean }) => {
   const win = BrowserWindow.fromWebContents(event.sender)
-  if (win && !win.isDestroyed()) {
+  if (process.platform !== 'linux' && win && !win.isDestroyed()) {
     win.setIgnoreMouseEvents(ignore, options || {})
   }
   if (!ignore) scheduleGlassToneSample()
+})
+
+interface X11InputModule {
+  isSupported(): boolean
+  setInputRegion(windowHandle: Buffer, rects: number[]): boolean
+}
+
+const MAX_INPUT_REGION_VALUES = 4096 * 4
+let inputRegionRects: number[] = []
+
+function loadX11Input(): X11InputModule | null {
+  if (process.platform !== 'linux') return null
+  try {
+    const mod: X11InputModule = require('clui-x11-input')
+    return mod.isSupported() ? mod : null
+  } catch (err) {
+    log(`[input] native module unavailable: ${err instanceof Error ? err.message : String(err)}`)
+    return null
+  }
+}
+
+const x11Input = loadX11Input()
+
+function parseInputRegion(value: unknown): number[] | null {
+  if (!Array.isArray(value) || value.length % 4 !== 0 || value.length > MAX_INPUT_REGION_VALUES) return null
+  const rects: unknown[] = value
+  return rects.every((entry) => isFiniteNumber(entry) && Number.isInteger(entry)) ? rects as number[] : null
+}
+
+function applyInputRegion(win: BrowserWindow | null): void {
+  if (!x11Input || !win || win.isDestroyed()) return
+  try {
+    if (!x11Input.setInputRegion(win.getNativeWindowHandle(), inputRegionRects)) log('[input] setInputRegion rejected')
+  } catch (err) {
+    log(`[input] setInputRegion failed: ${err instanceof Error ? err.message : String(err)}`)
+  }
+}
+
+ipcMain.handle(IPC.INPUT_REGION_SUPPORTED, () => x11Input !== null)
+
+ipcMain.on(IPC.SET_INPUT_REGION, (event, rects: unknown) => {
+  if (!x11Input) return
+  const parsed = parseInputRegion(rects)
+  if (!parsed) return
+  inputRegionRects = parsed
+  applyInputRegion(BrowserWindow.fromWebContents(event.sender))
+})
+
+const GNOME_BRIDGE_PROTOCOL = 1
+const GNOME_SETUP_NOTICE_DELAY_MS = 5000
+let linuxShortcut: string | null = null
+let gnomeExtensionVersion: string | null = null
+let gnomeGlassAvailable = false
+let gnomeToneInFlight = false
+
+function setGnomeGlassAvailable(available: boolean): void {
+  if (gnomeGlassAvailable === available) return
+  gnomeGlassAvailable = available
+  if (!available) {
+    gnomeToneInFlight = false
+    if (glassTone !== null) {
+      glassTone = null
+      broadcast(IPC.GLASS_TONE, null)
+    }
+  }
+  broadcast(IPC.GLASS_NATIVE_CHANGED, available)
+}
+
+function forwardGnomeGlassRegions(sender: Electron.WebContents, regions: unknown): void {
+  const win = BrowserWindow.fromWebContents(sender)
+  if (!win || win.isDestroyed()) return
+  const parsed = parseGlassRegions(regions)
+  const hadRegions = glassRegions.length > 0
+  glassRegions = parsed
+  if (parsed.length === 0) glassTone = null
+  if (!gnomeGlassAvailable) return
+  if (!hadRegions && parsed.length > 0) scheduleGlassToneSample()
+  let scale = 1
+  try {
+    scale = screen.getDisplayMatching(win.getBounds()).scaleFactor * sender.getZoomFactor()
+  } catch {}
+  gnomeBridge?.sendLatest('glass', {
+    type: 'glass',
+    scale,
+    regions: parsed.map(({ id, x, y, width, height, radius, alpha, tint, circles }) => ({ id, x, y, width, height, radius, alpha, tint, ...(circles ? { circles } : {}) })),
+  })
+}
+
+function requestGnomeGlassTone(): void {
+  if (gnomeToneInFlight || !gnomeGlassAvailable || !mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible()) return
+  if (glassRegions.length === 0) return
+  if (gnomeBridge?.send({ type: 'sample' })) gnomeToneInFlight = true
+}
+
+function handleGnomeTone(luminance: unknown): void {
+  gnomeToneInFlight = false
+  if (!gnomeGlassAvailable || glassRegions.length === 0) return
+  const target = glassRegions.find((region) => region.id === 'card') ?? glassRegions[0]
+  const dim = target.tint && target.tint[0] === 0 && target.tint[1] === 0 && target.tint[2] === 0 ? Math.min(Math.max(target.tint[3], 0), 1) : 0
+  const visible = isFiniteNumber(luminance) ? luminance * Math.pow(1 - dim, 2.2) : null
+  const tone = toneForLuminance(visible, glassTone)
+  if (tone !== glassTone) {
+    glassTone = tone
+    broadcast(IPC.GLASS_TONE, tone)
+  }
+}
+
+function nativeWindowId(win: BrowserWindow): number {
+  try {
+    const handle = win.getNativeWindowHandle()
+    if (handle.length >= 8) return Number(handle.readBigUInt64LE(0))
+    if (handle.length >= 4) return handle.readUInt32LE(0)
+  } catch (err) {
+    log(`[gnome] window id unavailable: ${err instanceof Error ? err.message : String(err)}`)
+  }
+  return 0
+}
+
+function setLinuxShortcutStatus(status: GlobalShortcutStatus): void {
+  broadcast(IPC.GLOBAL_SHORTCUT_STATUS, status)
+}
+
+function sendLinuxShortcut(): void {
+  if (!gnomeBridge?.isConnected()) {
+    setLinuxShortcutStatus('unavailable')
+    return
+  }
+  gnomeBridge.send({ type: 'shortcut', accelerator: linuxShortcut })
+}
+
+function handleGnomeMessage(message: BridgeMessage): void {
+  switch (message.type) {
+    case 'hello': {
+      const version: unknown = message.version
+      gnomeExtensionVersion = typeof version === 'string' ? version : null
+      if (message.protocol !== GNOME_BRIDGE_PROTOCOL) log(`[gnome] protocol mismatch: ${String(message.protocol)}`)
+      setGnomeGlassAvailable(message.protocol === GNOME_BRIDGE_PROTOCOL && message.glass === true)
+      break
+    }
+    case 'shortcut-status':
+      if (message.state === 'active' || message.state === 'conflict') setLinuxShortcutStatus(message.state)
+      break
+    case 'shortcut-activated':
+      toggleWindow('shortcut gnome')
+      break
+    case 'tone':
+      handleGnomeTone(message.luminance)
+      break
+    case 'focus-changed':
+      scheduleGlassToneSample(GLASS_APP_SWITCH_DELAY_MS)
+      break
+  }
+}
+
+const gnomeBridge = isGnomeSession()
+  ? new GnomeBridge({
+      onConnect: () => {
+        log('[gnome] extension connected')
+        gnomeBridge?.send({ type: 'hello', protocol: GNOME_BRIDGE_PROTOCOL, xid: mainWindow && !mainWindow.isDestroyed() ? nativeWindowId(mainWindow) : 0 })
+        sendLinuxShortcut()
+      },
+      onDisconnect: () => {
+        log('[gnome] extension disconnected')
+        gnomeExtensionVersion = null
+        setGnomeGlassAvailable(false)
+        setLinuxShortcutStatus('unavailable')
+      },
+      onMessage: handleGnomeMessage,
+      log: (message) => log(`[gnome] ${message}`),
+    })
+  : null
+
+function startGnomeIntegration(): void {
+  if (!gnomeBridge) return
+  gnomeBridge.start()
+  void ensureGnomeExtension((message) => log(`[gnome] ${message}`)).then((changed) => {
+    if (!changed) return
+    setTimeout(() => {
+      if (gnomeBridge.isConnected() && gnomeExtensionVersion === bundledExtensionVersion()) return
+      if (!Notification.isSupported()) return
+      new Notification({
+        title: 'Clui CC',
+        body: 'Log out and back in once to enable the Clui CC shortcut and liquid glass.',
+        silent: true,
+        icon: nativeImage.createFromPath(join(__dirname, '../../resources/icon.png')),
+      }).show()
+    }, GNOME_SETUP_NOTICE_DELAY_MS)
+  })
+}
+
+ipcMain.on(IPC.SET_GLOBAL_SHORTCUT, (_event, accelerator: unknown) => {
+  if (process.platform !== 'linux') return
+  if (accelerator !== null && !isValidAccelerator(accelerator)) return
+  linuxShortcut = accelerator
+  sendLinuxShortcut()
 })
 
 // ─── IPC Handlers (typed, strict) ───
@@ -1559,6 +1802,81 @@ ipcMain.handle(IPC.ATTACH_FILES, async () => {
   })
 })
 
+const LINUX_PORTAL_SCREENSHOT_SCRIPT = `
+const { Gio, GLib } = imports.gi;
+const System = imports.system;
+const conn = Gio.DBus.session;
+const sender = conn.get_unique_name().substring(1).split('.').join('_');
+const token = 'clui' + GLib.uuid_string_random().split('-').join('');
+const requestPath = '/org/freedesktop/portal/desktop/request/' + sender + '/' + token;
+const loop = new GLib.MainLoop(null, false);
+const unwrap = (v) => (v !== null && typeof v === 'object' && typeof v.unpack === 'function') ? v.unpack() : v;
+let status = 3;
+let uri = '';
+conn.signal_subscribe(null, 'org.freedesktop.portal.Request', 'Response', requestPath, null, Gio.DBusSignalFlags.NONE, (c, s, p, i, n, params) => {
+  const [code, results] = params.deepUnpack();
+  uri = String(unwrap(results.uri) || '');
+  status = code === 0 && uri ? 0 : (code === 1 ? 1 : 2);
+  loop.quit();
+});
+try {
+  conn.call_sync('org.freedesktop.portal.Desktop', '/org/freedesktop/portal/desktop', 'org.freedesktop.portal.Screenshot', 'Screenshot',
+    new GLib.Variant('(sa{sv})', ['', { handle_token: GLib.Variant.new_string(token), interactive: GLib.Variant.new_boolean(true) }]),
+    null, Gio.DBusCallFlags.NONE, -1, null);
+} catch (e) {
+  printerr(String(e));
+  System.exit(4);
+}
+GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 110, () => {
+  try {
+    conn.call_sync('org.freedesktop.portal.Desktop', requestPath, 'org.freedesktop.portal.Request', 'Close', null, null, Gio.DBusCallFlags.NONE, -1, null);
+  } catch (e) {}
+  loop.quit();
+  return GLib.SOURCE_REMOVE;
+});
+loop.run();
+if (status === 0) print(uri);
+System.exit(status);
+`
+
+async function takeLinuxPortalScreenshot() {
+  const { fileURLToPath } = require('url')
+  const { tmpdir } = require('os')
+
+  let uri = ''
+  try {
+    const { stdout } = await execFileAsync('gjs', ['-c', LINUX_PORTAL_SCREENSHOT_SCRIPT], { timeout: 120000, maxBuffer: 1024 * 1024 })
+    uri = String(stdout).trim().split('\n').pop() || ''
+  } catch (err: unknown) {
+    const e = (err ?? {}) as { code?: unknown; signal?: unknown; stderr?: unknown }
+    if (e.code === 1) log('Portal screenshot cancelled by user')
+    else log(`Portal screenshot failed: code=${String(e.code)} signal=${String(e.signal)} ${String(e.stderr || '').trim().slice(0, 300)}`)
+    return null
+  }
+  if (!uri) return null
+
+  try {
+    const sourcePath = fileURLToPath(uri)
+    if (!existsSync(sourcePath)) return null
+
+    const buf = readFileSync(sourcePath)
+    const screenshotPath = join(tmpdir(), `clui-screenshot-${Date.now()}.png`)
+    writeFileSync(screenshotPath, buf)
+    return {
+      id: crypto.randomUUID(),
+      type: 'image',
+      name: `screenshot ${++screenshotCounter}.png`,
+      path: screenshotPath,
+      mimeType: 'image/png',
+      dataUrl: `data:image/png;base64,${buf.toString('base64')}`,
+      size: buf.length,
+    }
+  } catch (err: unknown) {
+    log(`Portal screenshot read failed: ${err instanceof Error ? err.message : String(err)}`)
+    return null
+  }
+}
+
 ipcMain.handle(IPC.TAKE_SCREENSHOT, async () => {
   if (!mainWindow) return null
 
@@ -1609,6 +1927,10 @@ ipcMain.handle(IPC.TAKE_SCREENSHOT, async () => {
       return null
     }
 
+    if (process.platform === 'linux') {
+      return await takeLinuxPortalScreenshot()
+    }
+
     const { execSync } = require('child_process')
     const { join } = require('path')
     const { tmpdir } = require('os')
@@ -1642,6 +1964,7 @@ ipcMain.handle(IPC.TAKE_SCREENSHOT, async () => {
     if (mainWindow) {
       mainWindow.show()
       mainWindow.webContents.focus()
+      if (process.platform === 'linux') gnomeBridge?.send({ type: 'activate' })
     }
     broadcast(IPC.WINDOW_SHOWN)
     if (SPACES_DEBUG) {
@@ -1869,6 +2192,69 @@ ipcMain.handle(IPC.GET_DIAGNOSTICS, () => {
   }
 })
 
+const LINUX_DOUBLE_DASH_TERMINALS = new Set(['ptyxis', 'gnome-terminal', 'gnome-terminal.wrapper', 'kgx'])
+
+function findExecutableInPath(name: string): string | null {
+  const { accessSync, constants } = require('fs')
+  for (const dir of (process.env.PATH || '').split(delimiter)) {
+    if (!dir) continue
+    const candidate = join(dir, name)
+    try {
+      if (!statSync(candidate).isFile()) continue
+      accessSync(candidate, constants.X_OK)
+      return candidate
+    } catch {}
+  }
+  return null
+}
+
+async function openLinuxTerminal(projectPath: string, claudeBin: string, sessionId: string | null): Promise<boolean> {
+  const { spawn } = require('child_process')
+  const { realpathSync } = require('fs')
+  const shellScript = 'cd -- "$1" && "$2" "${@:3}"; exec "${SHELL:-bash}" -l'
+  const payload = ['bash', '-lc', shellScript, 'bash', projectPath, claudeBin, ...(sessionId ? ['--resume', sessionId] : [])]
+
+  for (const name of ['xdg-terminal-exec', 'x-terminal-emulator', 'gnome-terminal', 'ptyxis', 'kgx']) {
+    const bin = findExecutableInPath(name)
+    if (!bin) continue
+
+    let prefix: string[] = ['--']
+    if (name === 'xdg-terminal-exec') {
+      prefix = []
+    } else if (name === 'x-terminal-emulator') {
+      let target = name
+      try { target = realpathSync(bin).split('/').pop() || name } catch {}
+      if (!LINUX_DOUBLE_DASH_TERMINALS.has(target)) continue
+    }
+
+    try {
+      const started = await new Promise<boolean>((resolve) => {
+        const child = spawn(bin, [...prefix, ...payload], { detached: true, stdio: 'ignore' })
+        child.on('error', (err: Error) => {
+          log(`Failed to launch ${name}: ${err.message}`)
+          resolve(false)
+        })
+        child.on('exit', (code: number | null) => {
+          if (code) log(`${name} exited with code ${code}`)
+        })
+        child.once('spawn', () => {
+          child.unref()
+          resolve(true)
+        })
+      })
+      if (started) {
+        log(`Opened terminal via ${name}`)
+        return true
+      }
+    } catch (err: unknown) {
+      log(`Failed to launch ${name}: ${err}`)
+    }
+  }
+
+  log('Failed to open terminal: no usable terminal emulator found')
+  return false
+}
+
 ipcMain.handle(IPC.OPEN_IN_TERMINAL, (_event, arg: string | null | { sessionId?: string | null; projectPath?: string }) => {
   const { execFile } = require('child_process')
   const claudeBin = 'claude'
@@ -1918,6 +2304,10 @@ ipcMain.handle(IPC.OPEN_IN_TERMINAL, (_event, arg: string | null | { sessionId?:
       log(`Failed to open terminal: ${err}`)
       return false
     }
+  }
+
+  if (process.platform === 'linux') {
+    return openLinuxTerminal(projectPath, claudeBin, sessionId)
   }
 
   const projectDir = projectPath.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
@@ -2047,6 +2437,7 @@ app.whenReady().then(async () => {
   startQuotaMonitoring()
   createWindow()
   snapshotWindowState('after createWindow')
+  startGnomeIntegration()
 
   if (SPACES_DEBUG) {
     mainWindow?.on('show', () => snapshotWindowState('event window show'))
@@ -2081,11 +2472,13 @@ app.whenReady().then(async () => {
 
   // Primary: Option+Space (2 keys, doesn't conflict with shell)
   // Fallback: Cmd+Shift+K kept as secondary shortcut
-  const registered = globalShortcut.register('Alt+Space', () => toggleWindow('shortcut Alt+Space'))
-  if (!registered) {
-    log('Alt+Space shortcut registration failed — macOS input sources may claim it')
+  if (process.platform !== 'linux' || !gnomeBridge) {
+    const registered = globalShortcut.register('Alt+Space', () => toggleWindow('shortcut Alt+Space'))
+    if (!registered) {
+      log('Alt+Space shortcut registration failed — macOS input sources may claim it')
+    }
+    globalShortcut.register('CommandOrControl+Shift+K', () => toggleWindow('shortcut Cmd/Ctrl+Shift+K'))
   }
-  globalShortcut.register('CommandOrControl+Shift+K', () => toggleWindow('shortcut Cmd/Ctrl+Shift+K'))
 
   if (process.env.ELECTRON_RENDERER_URL) {
     globalShortcut.register('F12', () => {
@@ -2102,7 +2495,7 @@ app.whenReady().then(async () => {
     : join(__dirname, '../../resources/trayTemplate.png')
   const trayIcon = nativeImage.createFromPath(trayIconPath)
   if (process.platform === 'darwin') trayIcon.setTemplateImage(true)
-  tray = new Tray(trayIcon)
+  tray = new Tray(process.platform === 'linux' ? whiteTrayIcon(trayIcon) : trayIcon)
   tray.setToolTip('Clui CC — Claude Code UI')
   tray.on('click', () => toggleWindow('tray click'))
   tray.setContextMenu(
@@ -2121,6 +2514,7 @@ app.whenReady().then(async () => {
 
 app.on('will-quit', () => {
   globalShortcut.unregisterAll()
+  gnomeBridge?.stop()
   cleanupQuotaWatchers()
   controlPlane.shutdown()
   flushLogs()

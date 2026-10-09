@@ -1,0 +1,11 @@
+{
+  "name": "clui-x11-input",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Native X11 input region for Clui CC on Linux",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "license": "MIT",
+  "os": ["linux"],
+  "gypfile": true
+}

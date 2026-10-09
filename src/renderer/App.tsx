@@ -13,6 +13,8 @@ import { useHealthReconciliation } from './hooks/useHealthReconciliation'
 import { LiquidGlassLayer } from './components/LiquidGlassLayer'
 import { GlassBlobLayer } from './components/GlassBlobLayer'
 import { initNativeGlass } from './stores/nativeGlass'
+import { initInputRegion } from './stores/inputRegion'
+import { initGlobalShortcut } from './stores/globalShortcut'
 import { useSessionStore, useActiveTab } from './stores/sessionStore'
 import { useColors, useThemeStore, useGlassActive, spacing } from './theme'
 import { setWindowVisibility } from './stores/sessionStore'
@@ -162,6 +164,10 @@ export default function App() {
   const [glassTop, setGlassTop] = useState(0)
 
   useEffect(() => initNativeGlass(), [])
+
+  useEffect(() => initInputRegion(), [])
+
+  useEffect(() => initGlobalShortcut(), [])
 
   useEffect(() => {
     if (!glassActive || nativeGlass || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return

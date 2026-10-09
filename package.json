@@ -30,7 +30,8 @@
     "zustand": "^5.0.0"
   },
   "optionalDependencies": {
-    "clui-native-glass": "file:native/glass"
+    "clui-native-glass": "file:native/glass",
+    "clui-x11-input": "file:native/x11-input"
   },
   "build": {
     "appId": "com.clui.app",

@@ -1,0 +1,8 @@
+{
+  "uuid": "clui-cc@monayzera.github.io",
+  "name": "Clui CC",
+  "description": "Global shortcut and liquid glass for the Clui CC desktop app.",
+  "shell-version": ["50", "51"],
+  "version-name": "1.0.0",
+  "url": "https://github.com/Monayzera/Clancy"
+}

@@ -1,12 +1,13 @@
 import { useThemeStore, isGlassActive } from '../theme'
 import type { GlassRegion } from '../../shared/types'
-import { measureBlob } from '../glassBlob'
+import { measureBlob, measureBlobCircles } from '../glassBlob'
 
 const APPEARANCE_AUTOMATIC = 0
 const STYLE_CLEAR = 1
 const VARIANT_SYSTEM_DEFAULT = -1
 const ADAPTIVE_OFF = 1
 const SUBTLE_DIM: GlassRegion['tint'] = [0, 0, 0, 0.07]
+const LINUX_SMOKE: GlassRegion['tint'] = [0, 0, 0, 0.2]
 
 function roundHalf(value: number): number {
   return Math.round(value * 2) / 2
@@ -23,12 +24,33 @@ function effectiveOpacity(element: Element): number {
 
 function collectRegions(): GlassRegion[] {
   const regions: GlassRegion[] = []
+  const tint = window.clui?.platform === 'linux' ? LINUX_SMOKE : SUBTLE_DIM
   document.querySelectorAll<HTMLElement>('[data-glass]').forEach((element) => {
     const id = element.dataset.glass
     const layoutWidth = element.offsetWidth
     if (!id || layoutWidth === 0 || element.offsetHeight === 0) return
     const alpha = effectiveOpacity(element)
     if (alpha <= 0.001) return
+    if (element.dataset.glassBlob !== undefined && window.clui?.platform === 'linux') {
+      const blob = measureBlobCircles(element)
+      if (!blob) return
+      regions.push({
+        id,
+        x: blob.x,
+        y: blob.y,
+        width: blob.width,
+        height: blob.height,
+        radius: 0,
+        alpha: Math.round(alpha * 100) / 100,
+        style: STYLE_CLEAR,
+        appearance: APPEARANCE_AUTOMATIC,
+        variant: VARIANT_SYSTEM_DEFAULT,
+        adaptive: ADAPTIVE_OFF,
+        tint,
+        circles: blob.circles,
+      })
+      return
+    }
     if (element.dataset.glassBlob !== undefined) {
       const blob = measureBlob(element)
       if (!blob) return
@@ -44,7 +66,7 @@ function collectRegions(): GlassRegion[] {
         appearance: APPEARANCE_AUTOMATIC,
         variant: VARIANT_SYSTEM_DEFAULT,
         adaptive: ADAPTIVE_OFF,
-        tint: SUBTLE_DIM,
+        tint,
         paths: blob.paths,
       })
       return
@@ -64,7 +86,7 @@ function collectRegions(): GlassRegion[] {
       appearance: APPEARANCE_AUTOMATIC,
       variant: VARIANT_SYSTEM_DEFAULT,
       adaptive: ADAPTIVE_OFF,
-      tint: SUBTLE_DIM,
+      tint,
     })
   })
   return regions
@@ -103,6 +125,13 @@ export function initNativeGlass(): () => void {
 
   const unsubscribe = useThemeStore.subscribe(start)
   const unsubscribeTone = api.onGlassTone ? api.onGlassTone((tone) => useThemeStore.getState().setGlassTone(tone)) : () => {}
+  const unsubscribeNative = api.onNativeGlassChange
+    ? api.onNativeGlassChange((supported) => {
+        if (disposed) return
+        useThemeStore.getState().setNativeGlass(supported)
+        start()
+      })
+    : () => {}
   api.isNativeGlassSupported()
     .then((supported) => {
       if (disposed) return
@@ -116,6 +145,7 @@ export function initNativeGlass(): () => void {
     if (frame) cancelAnimationFrame(frame)
     unsubscribe()
     unsubscribeTone()
+    unsubscribeNative()
     api.setGlassRegions([])
   }
 }
